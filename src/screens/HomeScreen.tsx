@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   ScrollView,
   RefreshControl,
+  Animated,
 } from 'react-native';
 import Icon from '@react-native-vector-icons/material-design-icons';
 import type { HomeScreenProps } from '../types';
@@ -21,6 +22,14 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const [refreshing, setRefreshing] = useState(false);
   const [accounts, setAccounts] = useState<StoredAccount[]>([]);
   const [balances, setBalances] = useState<Record<string, Balance>>({});
+  const [showScrollbar, setShowScrollbar] = useState(false);
+  const [focusedIndex, setFocusedIndex] = useState<number>(-2); // Track which element is focused for styling
+  
+  // Use Animated.Value for smooth, performant scrollbar updates
+  const scrollIndicatorOffset = useRef(new Animated.Value(0)).current;
+  const scrollIndicatorHeight = useRef(new Animated.Value(0)).current;
+  const contentHeight = useRef(0);
+  const scrollHeight = useRef(0);
 
   // Fetch account data
   const fetchData = async (isRefresh = false) => {
@@ -81,6 +90,78 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     navigation.navigate('AddAccount');
   };
 
+  // Handle scroll to update indicator position (using Animated for performance)
+  const handleScroll = (event: any) => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const scrollHeightVal = layoutMeasurement.height;
+    const contentHeightVal = contentSize.height;
+    const scrollOffset = contentOffset.y;
+
+    // Store values in refs
+    scrollHeight.current = scrollHeightVal;
+    contentHeight.current = contentHeightVal;
+
+    if (contentHeightVal > scrollHeightVal) {
+      // Calculate indicator height and position
+      const indicatorHeight = Math.max((scrollHeightVal / contentHeightVal) * scrollHeightVal, 30);
+      const maxScrollOffset = contentHeightVal - scrollHeightVal;
+      const indicatorOffset = (scrollOffset / maxScrollOffset) * (scrollHeightVal - indicatorHeight);
+
+      // Use Animated.timing for smooth updates without causing re-renders
+      scrollIndicatorHeight.setValue(indicatorHeight);
+      scrollIndicatorOffset.setValue(indicatorOffset);
+      
+      if (!showScrollbar) {
+        setShowScrollbar(true);
+      }
+    } else {
+      // No scrollable content
+      if (showScrollbar) {
+        setShowScrollbar(false);
+      }
+    }
+  };
+
+  const handleLayout = (event: any) => {
+    const { height } = event.nativeEvent.layout;
+    scrollHeight.current = height;
+    
+    // Recalculate scrollbar if we have content
+    if (contentHeight.current > 0) {
+      updateScrollbar();
+    }
+  };
+
+  const handleContentSizeChange = (_width: number, height: number) => {
+    contentHeight.current = height;
+    
+    // Recalculate scrollbar when content size changes
+    if (scrollHeight.current > 0) {
+      updateScrollbar();
+    }
+  };
+
+  const updateScrollbar = () => {
+    const contentHeightVal = contentHeight.current;
+    const scrollHeightVal = scrollHeight.current;
+
+    if (contentHeightVal > scrollHeightVal) {
+      // Calculate initial indicator height (at scroll position 0)
+      const indicatorHeight = Math.max((scrollHeightVal / contentHeightVal) * scrollHeightVal, 30);
+      
+      scrollIndicatorHeight.setValue(indicatorHeight);
+      scrollIndicatorOffset.setValue(0);
+      
+      if (!showScrollbar) {
+        setShowScrollbar(true);
+      }
+    } else {
+      if (showScrollbar) {
+        setShowScrollbar(false);
+      }
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.centerContainer}>
@@ -99,8 +180,13 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           <Text style={styles.subtitle}>Accounts</Text>
         </View>
         <TouchableOpacity 
-          style={styles.addIconButton}
+          style={[
+            styles.addIconButton,
+            focusedIndex === -1 && styles.focusedElement
+          ]}
           onPress={handleAddAccount}
+          onFocus={() => setFocusedIndex(-1)}
+          onBlur={() => setFocusedIndex(-2)}
           activeOpacity={0.7}
         >
           <Icon name="bank-plus" size={32} color={colors.accent} />
@@ -108,34 +194,51 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       </View>
 
       {/* Scrollable Account List */}
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={colors.primary}
-            colors={[colors.primary]}
-          />
-        }
-      >
-        {/* Account Cards */}
-        {accounts.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No accounts added yet</Text>
-            <Text style={styles.emptySubtext}>
-              Add your first account to get started
-            </Text>
-          </View>
-        ) : (
-          // DEBUG: Render each account 3 times
-          accounts.flatMap((account) => 
-            [0, 1, 2].map((duplicate) => {
+      <View style={styles.scrollContainer}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          onLayout={handleLayout}
+          onContentSizeChange={handleContentSizeChange}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
+            />
+          }
+        >
+          {/* Account Cards */}
+          {accounts.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No accounts added yet</Text>
+              <Text style={styles.emptySubtext}>
+                Add your first account to get started
+              </Text>
+            </View>
+          ) : (
+            accounts.map((account, index) => {
               const balance = balances[account.accountUid];
-              const key = `${account.accountUid}-${duplicate}`;
+              const isFocused = focusedIndex === index;
               return (
-                <View key={key} style={styles.accountCard}>
+                <TouchableOpacity 
+                  key={account.accountUid}
+                  style={[
+                    styles.accountCard,
+                    isFocused && styles.focusedElement
+                  ]}
+                  activeOpacity={0.7}
+                  onFocus={() => setFocusedIndex(index)}
+                  onBlur={() => setFocusedIndex(-2)}
+                  onPress={() => {
+                    // TODO: Navigate to account detail when implemented
+                    console.log('[Home] Account pressed:', account.accountName);
+                  }}
+                >
                   <View style={styles.cardContent}>
                     {/* Left side - Account info */}
                     <View style={styles.accountInfo}>
@@ -161,12 +264,27 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                       <ActivityIndicator size="small" color={colors.primary} />
                     )}
                   </View>
-                </View>
+                </TouchableOpacity>
               );
             })
-          )
+          )}
+        </ScrollView>
+
+        {/* Custom Scroll Indicator */}
+        {showScrollbar && (
+          <View style={styles.scrollIndicatorTrack}>
+            <Animated.View 
+              style={[
+                styles.scrollIndicatorThumb,
+                {
+                  height: scrollIndicatorHeight,
+                  transform: [{ translateY: scrollIndicatorOffset }],
+                },
+              ]}
+            />
+          </View>
         )}
-      </ScrollView>
+      </View>
     </View>
   );
 }
@@ -274,5 +392,28 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.base,
     color: colors.textSecondary,
     textAlign: 'center',
+  },
+  scrollContainer: {
+    flex: 1,
+    position: 'relative',
+  },
+  scrollIndicatorTrack: {
+    position: 'absolute',
+    right: 2,
+    top: 0,
+    bottom: 0,
+    width: 4,
+    backgroundColor: 'transparent',
+  },
+  scrollIndicatorThumb: {
+    width: 4,
+    backgroundColor: colors.primary,
+    borderRadius: 2,
+    opacity: 0.6,
+  },
+  focusedElement: {
+    borderWidth: 2,
+    borderColor: colors.accent,
+    borderRadius: borderRadius.lg,
   },
 });
