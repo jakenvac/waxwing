@@ -15,9 +15,11 @@ import type { AddAccountScreenProps } from '../types';
 import { colors, typography, spacing, borderRadius, touchTarget } from '../theme';
 import { verifyToken, getAccounts as getApiAccounts } from '../services/starlingApi';
 import { addAccount } from '../services/storage';
+import { useSession } from '../context/SessionContext';
 import ScreenHeader from '../components/ScreenHeader';
 
 export default function AddAccountScreen({ navigation }: AddAccountScreenProps) {
+  const { loadSession } = useSession();
   const [token, setToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -108,8 +110,11 @@ export default function AddAccountScreen({ navigation }: AddAccountScreenProps) 
 
       // Show success message
       setSuccess(`Account "${account.name}" added successfully!`);
-      
-      // Wait a moment to show success, then navigate
+
+      // Reload the in-memory session so the new account is immediately available,
+      // then navigate after a short delay to let the success message show.
+      await loadSession();
+
       setTimeout(() => {
         console.log('[AddAccount] Navigating back to Home...');
         navigation.navigate('Home');

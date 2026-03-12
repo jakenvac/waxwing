@@ -6,6 +6,15 @@ import * as SecureStore from 'expo-secure-store';
 
 const ACCOUNTS_KEY = 'starling_accounts';
 
+/**
+ * SecureStore options that require device authentication (biometrics/PIN)
+ * before the value can be read. This is used for all reads/writes so that
+ * the OS prompts the user once on app launch.
+ */
+const AUTH_OPTIONS: SecureStore.SecureStoreOptions = {
+  requireAuthentication: true,
+};
+
 export interface StoredAccount {
   accountUid: string;
   accountName: string;
@@ -20,7 +29,7 @@ export interface StoredAccount {
  */
 export async function getAccounts(): Promise<StoredAccount[]> {
   console.log('[Storage] Getting all accounts...');
-  const json = await SecureStore.getItemAsync(ACCOUNTS_KEY);
+  const json = await SecureStore.getItemAsync(ACCOUNTS_KEY, AUTH_OPTIONS);
   if (!json) {
     console.log('[Storage] No accounts found in storage');
     return [];
@@ -56,7 +65,7 @@ export async function addAccount(account: StoredAccount): Promise<void> {
   console.log('[Storage] Account names:', accounts.map(a => a.accountName).join(', '));
   console.log('[Storage] Saving to SecureStore...');
   
-  await SecureStore.setItemAsync(ACCOUNTS_KEY, JSON.stringify(accounts));
+  await SecureStore.setItemAsync(ACCOUNTS_KEY, JSON.stringify(accounts), AUTH_OPTIONS);
   
   console.log('[Storage] Saved successfully!');
   console.log('[Storage] ========== ADD ACCOUNT COMPLETE ==========');
@@ -68,12 +77,12 @@ export async function addAccount(account: StoredAccount): Promise<void> {
 export async function removeAccount(accountUid: string): Promise<void> {
   const accounts = await getAccounts();
   const filtered = accounts.filter(a => a.accountUid !== accountUid);
-  await SecureStore.setItemAsync(ACCOUNTS_KEY, JSON.stringify(filtered));
+  await SecureStore.setItemAsync(ACCOUNTS_KEY, JSON.stringify(filtered), AUTH_OPTIONS);
 }
 
 /**
  * Delete all accounts (DEBUG ONLY)
  */
 export async function deleteAllAccounts(): Promise<void> {
-  await SecureStore.setItemAsync(ACCOUNTS_KEY, JSON.stringify([]));
+  await SecureStore.setItemAsync(ACCOUNTS_KEY, JSON.stringify([]), AUTH_OPTIONS);
 }
