@@ -2,7 +2,7 @@
   "expo": {
     "name": "Waxwing",
     "slug": "waxwing",
-    "version": "1.0.0",
+    "version": "dev",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -24,7 +24,8 @@
     },
     "platforms": ["android"],
     "plugins": [
-      "./plugins/withGradleProperties.js"
+      "./plugins/withGradleProperties.js",
+      "./plugins/withAndroidSigning.js"
     ]
   }
 }

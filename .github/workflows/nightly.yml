@@ -1,0 +1,110 @@
+name: Nightly Build
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Run at 2 AM UTC daily
+  workflow_dispatch:  # Allow manual trigger
+
+permissions:
+  contents: write  # Required to create/delete releases and upload assets
+
+jobs:
+  build:
+    name: Build Nightly APK
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Get short commit hash
+        id: get_hash
+        run: echo "HASH=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Update app.json with nightly version
+        run: |
+          sed -i 's/"version": "dev"/"version": "nightly-${{ steps.get_hash.outputs.HASH }}"/' app.json
+
+      - name: Run Expo prebuild
+        run: npx expo prebuild --clean --platform android
+
+      - name: Decode and setup keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/upload-keystore.keystore
+
+      - name: Create keystore.properties
+        run: |
+          cat > android/keystore.properties <<EOF
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          storeFile=upload-keystore.keystore
+          EOF
+
+      - name: Build signed release APK with Gradle
+        working-directory: android
+        run: ./gradlew assembleRelease
+
+      - name: Rename APK
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk \
+             waxwing-nightly-${{ steps.get_hash.outputs.HASH }}.apk
+
+      - name: Delete previous nightly pre-release
+        run: |
+          gh release list --limit 100 | grep "nightly-" | awk '{print $3}' | while read tag; do
+            echo "Deleting previous nightly release: $tag"
+            gh release delete "$tag" --yes --cleanup-tag || true
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create nightly tag
+        run: |
+          git tag nightly-${{ steps.get_hash.outputs.HASH }}
+          git push origin nightly-${{ steps.get_hash.outputs.HASH }}
+
+      - name: Create GitHub Pre-Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: nightly-${{ steps.get_hash.outputs.HASH }}
+          name: Nightly Build
+          files: waxwing-nightly-${{ steps.get_hash.outputs.HASH }}.apk
+          body: |
+            ## Waxwing Nightly Build
+            
+            **Commit:** ${{ steps.get_hash.outputs.HASH }}
+            **Built:** ${{ github.event.head_commit.timestamp }}
+            
+            ### ⚠️ Warning
+            This is an automated nightly build and may be unstable.
+            For stable releases, see the main releases page.
+            
+            ### Installation
+            Download the APK file below and install it on your Android device.
+            
+            **Note:** You may need to enable "Install from Unknown Sources" in your Android settings.
+          draft: false
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

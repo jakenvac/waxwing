@@ -1,0 +1,90 @@
+name: Build and Release APK
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Trigger on version tags like v1.0.0, v1.2.3, etc.
+
+permissions:
+  contents: write  # Required to create releases and upload assets
+
+jobs:
+  build:
+    name: Build Release APK
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Get version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Update app.json with version
+        run: |
+          sed -i 's/"version": "dev"/"version": "${{ steps.get_version.outputs.VERSION }}"/' app.json
+
+      - name: Run Expo prebuild
+        run: npx expo prebuild --clean --platform android
+
+      - name: Decode and setup keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/upload-keystore.keystore
+
+      - name: Create keystore.properties
+        run: |
+          cat > android/keystore.properties <<EOF
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          storeFile=upload-keystore.keystore
+          EOF
+
+      - name: Build signed release APK with Gradle
+        working-directory: android
+        run: ./gradlew assembleRelease
+
+      - name: Rename APK
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk \
+             waxwing-v${{ steps.get_version.outputs.VERSION }}.apk
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: waxwing-v${{ steps.get_version.outputs.VERSION }}.apk
+          body: |
+            ## Waxwing v${{ steps.get_version.outputs.VERSION }}
+            
+            ### Installation
+            Download the APK file below and install it on your Android device.
+            
+            **Note:** You may need to enable "Install from Unknown Sources" in your Android settings.
+            
+            ### Changes
+            See the commit history for details on what's new in this release.
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

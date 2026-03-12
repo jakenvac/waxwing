@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import Constants from 'expo-constants';
 import {
   View,
   Text,
@@ -202,6 +203,13 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           height={scrollIndicatorHeight}
         />
       </View>
+
+      {/* Version footer */}
+      <View style={styles.versionContainer}>
+        <Text style={styles.versionText}>
+          v{Constants.expoConfig?.version ?? 'dev'}
+        </Text>
+      </View>
     </View>
   );
 }
@@ -296,5 +304,13 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.base,
     color: colors.textSecondary,
     textAlign: 'center',
+  },
+  versionContainer: {
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+  },
+  versionText: {
+    fontSize: typography.fontSize.xs,
+    color: colors.textDisabled,
   },
 });
