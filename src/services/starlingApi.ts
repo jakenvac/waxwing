@@ -189,7 +189,10 @@ export async function addMoneyToSavingsGoal(
   minorUnits: number,
   currency: string
 ): Promise<ApiResponse<SavingsGoalTransferResponse>> {
-  const transferUid = crypto.randomUUID();
+  const transferUid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
   return makePutRequest<SavingsGoalTransferResponse>(
     `/api/v2/account/${accountUid}/savings-goals/${savingsGoalUid}/add-money/${transferUid}`,
     accessToken,
