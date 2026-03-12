@@ -14,7 +14,7 @@ import type { Balance } from '../types';
 import { colors, typography, spacing, borderRadius, touchTarget } from '../theme';
 import commonStyles from '../styles/commonStyles';
 import { getAccountBalance, formatCurrency } from '../services/starlingApi';
-import { getAccounts, deleteAllAccounts, type StoredAccount } from '../services/storage';
+import { getAccounts, type StoredAccount } from '../services/storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { useScrollbar } from '../hooks/useScrollbar';
 import ScrollbarIndicator from '../components/ScrollbarIndicator';
@@ -92,14 +92,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     navigation.navigate('AddAccount');
   };
 
-  // DEBUG: Handle delete all accounts
-  const handleDeleteAll = async () => {
-    await deleteAllAccounts();
-    setAccounts([]);
-    setBalances({});
-  };
-
-
   if (loading) {
     return (
       <View style={commonStyles.centerContainer}>
@@ -118,13 +110,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           <Text style={styles.subtitle}>Accounts</Text>
         </View>
         <View style={styles.headerButtons}>
-          <TouchableOpacity 
-            style={styles.deleteButton}
-            onPress={handleDeleteAll}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.deleteButtonText}>DELETE</Text>
-          </TouchableOpacity>
           <TouchableOpacity 
             style={styles.addIconButton}
             onPress={handleAddAccount}
@@ -235,17 +220,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-  },
-  deleteButton: {
-    backgroundColor: colors.debit, // coral red for DEBUG visibility
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.md,
-  },
-  deleteButtonText: {
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.bold,
-    color: '#FFFFFF',
   },
   addIconButton: {
     padding: spacing.xs,
