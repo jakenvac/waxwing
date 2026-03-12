@@ -19,11 +19,12 @@ export const colors = {
   textDisabled: '#6B5B95', // Muted purple - disabled text
   
   // Status colors
-  success: '#10B981', // Green - success states
+  success: '#10B981', // Green - success states, credit amounts
   error: '#EF4444', // Red - error states
   warning: '#F59E0B', // Amber - warning states
   info: '#3B82F6', // Blue - info states
   accent: '#14B8A6', // Teal - accent/add actions
+  debit: '#FF6B6B', // Coral red - debit/outgoing transaction amounts
   
   // UI elements
   border: '#4C3A6D', // Purple-gray - borders

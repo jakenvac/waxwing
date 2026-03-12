@@ -271,14 +271,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   successContainer: {
-    backgroundColor: '#10B98120', // green with 20% opacity
+    backgroundColor: colors.success + '20', // 20% opacity
     borderRadius: borderRadius.md,
     padding: spacing.md,
     marginBottom: spacing.lg,
   },
   successText: {
     fontSize: typography.fontSize.sm,
-    color: '#10B981', // green
+    color: colors.success,
     textAlign: 'center',
     fontWeight: typography.fontWeight.medium,
   },

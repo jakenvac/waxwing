@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   deleteButton: {
-    backgroundColor: '#FF6B6B', // coral red for DEBUG visibility
+    backgroundColor: colors.debit, // coral red for DEBUG visibility
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     borderRadius: borderRadius.md,

@@ -382,7 +382,7 @@ export default function AccountDetailScreen({ navigation, route }: AccountDetail
             ) : (
               transactions.map((transaction, index) => {
                 const isDebit = transaction.direction === 'OUT';
-                const amountColor = isDebit ? '#FF6B6B' : '#10B981'; // vibrant coral red for debits, green for credits
+                const amountColor = isDebit ? colors.debit : colors.success;
                 
                 return (
                   <TouchableOpacity
