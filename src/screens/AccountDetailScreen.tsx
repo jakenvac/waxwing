@@ -174,19 +174,9 @@ export default function AccountDetailScreen({ navigation, route }: AccountDetail
     }
   };
 
-  // Only block render until balance is ready - transactions load inline
-  if (loadingBalance && balance === null) {
-    return (
-      <View style={commonStyles.centerContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={commonStyles.loadingText}>Loading account details...</Text>
-      </View>
-    );
-  }
-
   return (
     <View style={commonStyles.container}>
-      {/* Fixed Header */}
+      {/* Fixed Header — always visible, even while balance is loading */}
       <ScreenHeader
         title={accountName}
         subtitle={accountType}
@@ -209,7 +199,12 @@ export default function AccountDetailScreen({ navigation, route }: AccountDetail
         }
       />
 
-      {/* Scrollable Content */}
+      {loadingBalance && balance === null ? (
+        <View style={commonStyles.centerContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={commonStyles.loadingText}>Loading account details...</Text>
+        </View>
+      ) : (
       <View style={commonStyles.scrollContainer}>
         <ScrollView
           style={commonStyles.scrollView}
@@ -365,6 +360,7 @@ export default function AccountDetailScreen({ navigation, route }: AccountDetail
           height={scrollIndicatorHeight}
         />
       </View>
+      )}
     </View>
   );
 }
