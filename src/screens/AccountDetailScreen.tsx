@@ -7,7 +7,6 @@ import {
   ActivityIndicator,
   ScrollView,
   RefreshControl,
-  Animated,
   findNodeHandle,
 } from 'react-native';
 import Icon from '@react-native-vector-icons/material-design-icons';
@@ -16,6 +15,8 @@ import type { Balance, FeedItem } from '../types';
 import { colors, typography, spacing, borderRadius } from '../theme';
 import { getAccountBalance, getTransactionFeed, formatCurrency } from '../services/starlingApi';
 import { useFocusEffect } from '@react-navigation/native';
+import { useScrollbar } from '../hooks/useScrollbar';
+import ScrollbarIndicator from '../components/ScrollbarIndicator';
 
 export default function AccountDetailScreen({ navigation, route }: AccountDetailScreenProps) {
   const { accountUid, accountName, accountType, defaultCategory, token } = route.params;
@@ -34,13 +35,15 @@ export default function AccountDetailScreen({ navigation, route }: AccountDetail
   const [balance, setBalance] = useState<Balance | null>(null);
   const [transactions, setTransactions] = useState<FeedItem[]>([]);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
-  const [showScrollbar, setShowScrollbar] = useState(false);
-  
-  // Use Animated.Value for smooth scrollbar
-  const scrollIndicatorOffset = useRef(new Animated.Value(0)).current;
-  const scrollIndicatorHeight = useRef(new Animated.Value(0)).current;
-  const contentHeight = useRef(0);
-  const scrollHeight = useRef(0);
+
+  const {
+    showScrollbar,
+    scrollIndicatorOffset,
+    scrollIndicatorHeight,
+    handleScroll,
+    handleLayout,
+    handleContentSizeChange,
+  } = useScrollbar();
 
   // Fetch balance and transactions in parallel, updating each independently
   const fetchData = async (isRefresh = false) => {
@@ -114,70 +117,6 @@ export default function AccountDetailScreen({ navigation, route }: AccountDetail
     navigation.goBack();
   };
 
-  // Handle scroll for scrollbar
-  const handleScroll = (event: any) => {
-    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-    const scrollHeightVal = layoutMeasurement.height;
-    const contentHeightVal = contentSize.height;
-    const scrollOffset = contentOffset.y;
-
-    scrollHeight.current = scrollHeightVal;
-    contentHeight.current = contentHeightVal;
-
-    if (contentHeightVal > scrollHeightVal) {
-      const indicatorHeight = Math.max((scrollHeightVal / contentHeightVal) * scrollHeightVal, 30);
-      const maxScrollOffset = contentHeightVal - scrollHeightVal;
-      const indicatorOffset = (scrollOffset / maxScrollOffset) * (scrollHeightVal - indicatorHeight);
-
-      scrollIndicatorHeight.setValue(indicatorHeight);
-      scrollIndicatorOffset.setValue(indicatorOffset);
-      
-      if (!showScrollbar) {
-        setShowScrollbar(true);
-      }
-    } else {
-      if (showScrollbar) {
-        setShowScrollbar(false);
-      }
-    }
-  };
-
-  const handleLayout = (event: any) => {
-    const { height } = event.nativeEvent.layout;
-    scrollHeight.current = height;
-    
-    if (contentHeight.current > 0) {
-      updateScrollbar();
-    }
-  };
-
-  const handleContentSizeChange = (_width: number, height: number) => {
-    contentHeight.current = height;
-    
-    if (scrollHeight.current > 0) {
-      updateScrollbar();
-    }
-  };
-
-  const updateScrollbar = () => {
-    const contentHeightVal = contentHeight.current;
-    const scrollHeightVal = scrollHeight.current;
-
-    if (contentHeightVal > scrollHeightVal) {
-      const indicatorHeight = Math.max((scrollHeightVal / contentHeightVal) * scrollHeightVal, 30);
-      
-      scrollIndicatorHeight.setValue(indicatorHeight);
-      scrollIndicatorOffset.setValue(0);
-      
-      if (!showScrollbar) {
-        setShowScrollbar(true);
-      }
-    } else {
-      if (showScrollbar) {
-        setShowScrollbar(false);
-      }
-    }
-  };
 
   // Format relative time (e.g., "2m ago", "1h ago")
   const formatRelativeTime = (timestamp: string): string => {
@@ -422,20 +361,11 @@ export default function AccountDetailScreen({ navigation, route }: AccountDetail
           </View>
         </ScrollView>
 
-        {/* Custom Scroll Indicator */}
-        {showScrollbar && (
-          <View style={styles.scrollIndicatorTrack}>
-            <Animated.View 
-              style={[
-                styles.scrollIndicatorThumb,
-                {
-                  height: scrollIndicatorHeight,
-                  transform: [{ translateY: scrollIndicatorOffset }],
-                },
-              ]}
-            />
-          </View>
-        )}
+        <ScrollbarIndicator
+          visible={showScrollbar}
+          offset={scrollIndicatorOffset}
+          height={scrollIndicatorHeight}
+        />
       </View>
     </View>
   );
@@ -631,19 +561,4 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: spacing.md,
   },
-  scrollIndicatorTrack: {
-    position: 'absolute',
-    right: 2,
-    top: 0,
-    bottom: 0,
-    width: 4,
-    backgroundColor: 'transparent',
-  },
-  scrollIndicatorThumb: {
-    width: 4,
-    backgroundColor: colors.primary,
-    borderRadius: 2,
-    opacity: 0.6,
-  },
-
 });

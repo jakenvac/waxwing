@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,6 @@ import {
   ActivityIndicator,
   ScrollView,
   RefreshControl,
-  Animated,
 } from 'react-native';
 import Icon from '@react-native-vector-icons/material-design-icons';
 import type { HomeScreenProps } from '../types';
@@ -16,19 +15,22 @@ import { colors, typography, spacing, borderRadius } from '../theme';
 import { getAccountBalance, formatCurrency } from '../services/starlingApi';
 import { getAccounts, deleteAllAccounts, type StoredAccount } from '../services/storage';
 import { useFocusEffect } from '@react-navigation/native';
+import { useScrollbar } from '../hooks/useScrollbar';
+import ScrollbarIndicator from '../components/ScrollbarIndicator';
 
 export default function HomeScreen({ navigation }: HomeScreenProps) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [accounts, setAccounts] = useState<StoredAccount[]>([]);
   const [balances, setBalances] = useState<Record<string, Balance>>({});
-  const [showScrollbar, setShowScrollbar] = useState(false);
-  
-  // Use Animated.Value for smooth, performant scrollbar updates
-  const scrollIndicatorOffset = useRef(new Animated.Value(0)).current;
-  const scrollIndicatorHeight = useRef(new Animated.Value(0)).current;
-  const contentHeight = useRef(0);
-  const scrollHeight = useRef(0);
+  const {
+    showScrollbar,
+    scrollIndicatorOffset,
+    scrollIndicatorHeight,
+    handleScroll,
+    handleLayout,
+    handleContentSizeChange,
+  } = useScrollbar();
 
   // Fetch account data
   const fetchData = async (isRefresh = false) => {
@@ -96,77 +98,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     setBalances({});
   };
 
-  // Handle scroll to update indicator position (using Animated for performance)
-  const handleScroll = (event: any) => {
-    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-    const scrollHeightVal = layoutMeasurement.height;
-    const contentHeightVal = contentSize.height;
-    const scrollOffset = contentOffset.y;
-
-    // Store values in refs
-    scrollHeight.current = scrollHeightVal;
-    contentHeight.current = contentHeightVal;
-
-    if (contentHeightVal > scrollHeightVal) {
-      // Calculate indicator height and position
-      const indicatorHeight = Math.max((scrollHeightVal / contentHeightVal) * scrollHeightVal, 30);
-      const maxScrollOffset = contentHeightVal - scrollHeightVal;
-      const indicatorOffset = (scrollOffset / maxScrollOffset) * (scrollHeightVal - indicatorHeight);
-
-      // Use Animated.timing for smooth updates without causing re-renders
-      scrollIndicatorHeight.setValue(indicatorHeight);
-      scrollIndicatorOffset.setValue(indicatorOffset);
-      
-      if (!showScrollbar) {
-        setShowScrollbar(true);
-      }
-    } else {
-      // No scrollable content
-      if (showScrollbar) {
-        setShowScrollbar(false);
-      }
-    }
-  };
-
-  const handleLayout = (event: any) => {
-    const { height } = event.nativeEvent.layout;
-    scrollHeight.current = height;
-    
-    // Recalculate scrollbar if we have content
-    if (contentHeight.current > 0) {
-      updateScrollbar();
-    }
-  };
-
-  const handleContentSizeChange = (_width: number, height: number) => {
-    contentHeight.current = height;
-    
-    // Recalculate scrollbar when content size changes
-    if (scrollHeight.current > 0) {
-      updateScrollbar();
-    }
-  };
-
-  const updateScrollbar = () => {
-    const contentHeightVal = contentHeight.current;
-    const scrollHeightVal = scrollHeight.current;
-
-    if (contentHeightVal > scrollHeightVal) {
-      // Calculate initial indicator height (at scroll position 0)
-      const indicatorHeight = Math.max((scrollHeightVal / contentHeightVal) * scrollHeightVal, 30);
-      
-      scrollIndicatorHeight.setValue(indicatorHeight);
-      scrollIndicatorOffset.setValue(0);
-      
-      if (!showScrollbar) {
-        setShowScrollbar(true);
-      }
-    } else {
-      if (showScrollbar) {
-        setShowScrollbar(false);
-      }
-    }
-  };
 
   if (loading) {
     return (
@@ -279,20 +210,11 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           )}
         </ScrollView>
 
-        {/* Custom Scroll Indicator */}
-        {showScrollbar && (
-          <View style={styles.scrollIndicatorTrack}>
-            <Animated.View 
-              style={[
-                styles.scrollIndicatorThumb,
-                {
-                  height: scrollIndicatorHeight,
-                  transform: [{ translateY: scrollIndicatorOffset }],
-                },
-              ]}
-            />
-          </View>
-        )}
+        <ScrollbarIndicator
+          visible={showScrollbar}
+          offset={scrollIndicatorOffset}
+          height={scrollIndicatorHeight}
+        />
       </View>
     </View>
   );
@@ -422,19 +344,4 @@ const styles = StyleSheet.create({
     flex: 1,
     position: 'relative',
   },
-  scrollIndicatorTrack: {
-    position: 'absolute',
-    right: 2,
-    top: 0,
-    bottom: 0,
-    width: 4,
-    backgroundColor: 'transparent',
-  },
-  scrollIndicatorThumb: {
-    width: 4,
-    backgroundColor: colors.primary,
-    borderRadius: 2,
-    opacity: 0.6,
-  },
-
 });
