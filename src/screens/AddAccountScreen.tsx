@@ -15,6 +15,7 @@ import type { AddAccountScreenProps } from '../types';
 import { colors, typography, spacing, borderRadius, touchTarget } from '../theme';
 import { verifyToken, getAccounts as getApiAccounts } from '../services/starlingApi';
 import { addAccount } from '../services/storage';
+import ScreenHeader from '../components/ScreenHeader';
 
 export default function AddAccountScreen({ navigation }: AddAccountScreenProps) {
   const [token, setToken] = useState('');
@@ -133,21 +134,17 @@ export default function AddAccountScreen({ navigation }: AddAccountScreenProps) 
       style={styles.container}
       behavior={Platform.OS === 'android' ? 'height' : 'padding'}
     >
+      <ScreenHeader
+        title="Add Account"
+        onBack={() => navigation.goBack()}
+      />
+
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.content}>
-          {/* Header */}
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={styles.backButtonText}>← Back</Text>
-          </TouchableOpacity>
-
-          {/* Title */}
-          <Text style={styles.title}>Add Account</Text>
+          {/* Description */}
           <Text style={styles.subtitle}>
             Enter a Personal Access Token to link your Starling account
           </Text>
@@ -217,21 +214,8 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xl,
-  },
-  backButton: {
-    marginBottom: spacing.lg,
-  },
-  backButtonText: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.primary,
-  },
-  title: {
-    fontSize: typography.fontSize.xxxl,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-    marginBottom: spacing.xs,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xl,
   },
   subtitle: {
     fontSize: typography.fontSize.base,

@@ -72,15 +72,6 @@ export async function removeAccount(accountUid: string): Promise<void> {
 }
 
 /**
- * Get token for a specific account
- */
-export async function getAccountToken(accountUid: string): Promise<string | null> {
-  const accounts = await getAccounts();
-  const account = accounts.find(a => a.accountUid === accountUid);
-  return account?.token || null;
-}
-
-/**
  * Delete all accounts (DEBUG ONLY)
  */
 export async function deleteAllAccounts(): Promise<void> {

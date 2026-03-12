@@ -3,13 +3,15 @@
  * Accepts a title, subtitle (account name), and optional icon name.
  */
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import Icon from '@react-native-vector-icons/material-design-icons';
+import { Text } from 'react-native';
 import { colors, typography, spacing } from '../theme';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types';
+import ScreenHeader from '../components/ScreenHeader';
 
-type PlaceholderRoute = 'SavingsGoals' | 'Payees' | 'SendMoney' | 'ReceiveMoney';
+type PlaceholderRoute = 'Settings' | 'SavingsGoals' | 'Payees' | 'SendMoney' | 'ReceiveMoney';
 
 type Props = NativeStackScreenProps<RootStackParamList, PlaceholderRoute> & {
   title: string;
@@ -21,20 +23,11 @@ export default function PlaceholderScreen({ navigation, route, title, iconName }
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
-        >
-          <Icon name="arrow-left" size={24} color={colors.textPrimary} />
-        </TouchableOpacity>
-        <View style={styles.headerText}>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.subtitle}>{accountName}</Text>
-        </View>
-      </View>
+      <ScreenHeader
+        title={title}
+        subtitle={accountName}
+        onBack={() => navigation.goBack()}
+      />
 
       {/* Placeholder */}
       <View style={styles.placeholder}>
@@ -49,31 +42,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
-  },
-  backButton: {
-    padding: spacing.xs,
-    marginRight: spacing.sm,
-  },
-  headerText: {
-    flex: 1,
-  },
-  title: {
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-  },
-  subtitle: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.regular,
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
   },
   placeholder: {
     flex: 1,

@@ -11,7 +11,8 @@ import {
 import Icon from '@react-native-vector-icons/material-design-icons';
 import type { HomeScreenProps } from '../types';
 import type { Balance } from '../types';
-import { colors, typography, spacing, borderRadius } from '../theme';
+import { colors, typography, spacing, borderRadius, touchTarget } from '../theme';
+import commonStyles from '../styles/commonStyles';
 import { getAccountBalance, formatCurrency } from '../services/starlingApi';
 import { getAccounts, deleteAllAccounts, type StoredAccount } from '../services/storage';
 import { useFocusEffect } from '@react-navigation/native';
@@ -101,15 +102,15 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
+      <View style={commonStyles.centerContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Loading accounts...</Text>
+        <Text style={commonStyles.loadingText}>Loading accounts...</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={commonStyles.container}>
       {/* Fixed Header */}
       <View style={styles.header}>
         <View>
@@ -135,10 +136,10 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       </View>
 
       {/* Scrollable Account List */}
-      <View style={styles.scrollContainer}>
+      <View style={commonStyles.scrollContainer}>
         <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
+          style={commonStyles.scrollView}
+          contentContainerStyle={commonStyles.scrollContent}
           showsVerticalScrollIndicator={false}
           onScroll={handleScroll}
           scrollEventThrottle={16}
@@ -221,17 +222,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  centerContainer: {
-    flex: 1,
-    backgroundColor: colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -259,13 +249,10 @@ const styles = StyleSheet.create({
   },
   addIconButton: {
     padding: spacing.xs,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.lg,
+    minHeight: touchTarget.minHeight,
+    minWidth: touchTarget.minWidth,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   title: {
     fontSize: typography.fontSize.xxxl,
@@ -283,6 +270,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
     marginBottom: spacing.md,
+    minHeight: touchTarget.minHeight,
   },
   cardContent: {
     flexDirection: 'row',
@@ -319,11 +307,6 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeight.bold,
     color: colors.textPrimary,
   },
-  loadingText: {
-    fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
-    marginTop: spacing.md,
-  },
   emptyContainer: {
     alignItems: 'center',
     paddingVertical: spacing.xxl,
@@ -339,9 +322,5 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.base,
     color: colors.textSecondary,
     textAlign: 'center',
-  },
-  scrollContainer: {
-    flex: 1,
-    position: 'relative',
   },
 });

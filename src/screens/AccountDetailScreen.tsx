@@ -12,11 +12,13 @@ import {
 import Icon from '@react-native-vector-icons/material-design-icons';
 import type { AccountDetailScreenProps } from '../types';
 import type { Balance, FeedItem } from '../types';
-import { colors, typography, spacing, borderRadius } from '../theme';
+import { colors, typography, spacing, borderRadius, touchTarget } from '../theme';
+import commonStyles from '../styles/commonStyles';
 import { getAccountBalance, getTransactionFeed, formatCurrency } from '../services/starlingApi';
 import { useFocusEffect } from '@react-navigation/native';
 import { useScrollbar } from '../hooks/useScrollbar';
 import ScrollbarIndicator from '../components/ScrollbarIndicator';
+import ScreenHeader from '../components/ScreenHeader';
 
 export default function AccountDetailScreen({ navigation, route }: AccountDetailScreenProps) {
   const { accountUid, accountName, accountType, defaultCategory, token } = route.params;
@@ -175,47 +177,43 @@ export default function AccountDetailScreen({ navigation, route }: AccountDetail
   // Only block render until balance is ready - transactions load inline
   if (loadingBalance && balance === null) {
     return (
-      <View style={styles.centerContainer}>
+      <View style={commonStyles.centerContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Loading account details...</Text>
+        <Text style={commonStyles.loadingText}>Loading account details...</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={commonStyles.container}>
       {/* Fixed Header */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          ref={backButtonRef}
-          style={styles.backButton}
-          onPress={handleBack}
-          activeOpacity={0.7}
-          nextFocusRight={findNodeHandle(cogButtonRef.current) ?? undefined}
-          nextFocusDown={findNodeHandle(savingsGoalsRef.current) ?? undefined}
-        >
-          <Icon name="arrow-left" size={24} color={colors.textPrimary} />
-        </TouchableOpacity>
-        <View style={styles.headerText}>
-          <Text style={styles.headerTitle}>{accountName}</Text>
-          <Text style={styles.headerSubtitle}>{accountType}</Text>
-        </View>
-        <TouchableOpacity
-          ref={cogButtonRef}
-          style={styles.cogButton}
-          onPress={() => navigation.navigate('Settings', { accountUid, accountName, token })}
-          activeOpacity={0.7}
-          nextFocusLeft={findNodeHandle(backButtonRef.current) ?? undefined}
-        >
-          <Icon name="cog-outline" size={26} color={colors.textSecondary} />
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        title={accountName}
+        subtitle={accountType}
+        onBack={handleBack}
+        backButtonRef={backButtonRef}
+        backButtonProps={{
+          nextFocusRight: findNodeHandle(cogButtonRef.current) ?? undefined,
+          nextFocusDown: findNodeHandle(savingsGoalsRef.current) ?? undefined,
+        }}
+        right={
+          <TouchableOpacity
+            ref={cogButtonRef}
+            style={styles.cogButton}
+            onPress={() => navigation.navigate('Settings', { accountUid, accountName, token })}
+            activeOpacity={0.7}
+            nextFocusLeft={findNodeHandle(backButtonRef.current) ?? undefined}
+          >
+            <Icon name="cog-outline" size={26} color={colors.textSecondary} />
+          </TouchableOpacity>
+        }
+      />
 
       {/* Scrollable Content */}
-      <View style={styles.scrollContainer}>
+      <View style={commonStyles.scrollContainer}>
         <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
+          style={commonStyles.scrollView}
+          contentContainerStyle={commonStyles.scrollContent}
           showsVerticalScrollIndicator={false}
           onScroll={handleScroll}
           scrollEventThrottle={16}
@@ -372,57 +370,13 @@ export default function AccountDetailScreen({ navigation, route }: AccountDetail
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  centerContainer: {
-    flex: 1,
-    backgroundColor: colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
-    backgroundColor: colors.background,
-  },
-  backButton: {
-    padding: spacing.xs,
-    marginRight: spacing.sm,
-  },
-  headerText: {
-    flex: 1,
-  },
   cogButton: {
     padding: spacing.xs,
     marginLeft: spacing.sm,
-  },
-  headerTitle: {
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-  },
-  headerSubtitle: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.regular,
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
-  },
-  scrollContainer: {
-    flex: 1,
-    position: 'relative',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.lg,
+    minHeight: touchTarget.minHeight,
+    minWidth: touchTarget.minWidth,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   balanceSection: {
     backgroundColor: colors.surface,
@@ -489,6 +443,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    minHeight: touchTarget.minHeight,
   },
   actionLabel: {
     flex: 1,
@@ -523,7 +478,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     padding: spacing.md,
     marginBottom: spacing.sm,
-    minHeight: 52,
+    minHeight: touchTarget.minHeight,
   },
   transactionContent: {
     flexDirection: 'row',
@@ -555,10 +510,5 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: typography.fontSize.base,
     color: colors.textSecondary,
-  },
-  loadingText: {
-    fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
-    marginTop: spacing.md,
   },
 });
