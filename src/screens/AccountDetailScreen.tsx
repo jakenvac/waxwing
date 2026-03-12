@@ -19,7 +19,8 @@ import { useFocusEffect } from '@react-navigation/native';
 export default function AccountDetailScreen({ navigation, route }: AccountDetailScreenProps) {
   const { accountUid, accountName, accountType, defaultCategory, token } = route.params;
   
-  const [loading, setLoading] = useState(true);
+  const [loadingBalance, setLoadingBalance] = useState(true);
+  const [loadingTransactions, setLoadingTransactions] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [balance, setBalance] = useState<Balance | null>(null);
   const [transactions, setTransactions] = useState<FeedItem[]>([]);
@@ -33,52 +34,59 @@ export default function AccountDetailScreen({ navigation, route }: AccountDetail
   const contentHeight = useRef(0);
   const scrollHeight = useRef(0);
 
-  // Fetch account data
+  // Fetch balance and transactions in parallel, updating each independently
   const fetchData = async (isRefresh = false) => {
-    try {
-      if (isRefresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
+    console.log('[AccountDetail] ========== FETCHING DATA ==========');
+    console.log('[AccountDetail] accountUid:', accountUid);
+    console.log('[AccountDetail] defaultCategory:', defaultCategory);
+    console.log('[AccountDetail] token (first 10 chars):', token.substring(0, 10) + '...');
 
-      console.log('[AccountDetail] ========== FETCHING DATA ==========');
-      console.log('[AccountDetail] accountUid:', accountUid);
-      console.log('[AccountDetail] accountName:', accountName);
-      console.log('[AccountDetail] accountType:', accountType);
-      console.log('[AccountDetail] defaultCategory:', defaultCategory);
-      console.log('[AccountDetail] token (first 10 chars):', token.substring(0, 10) + '...');
-
-      // Fetch balance
-      console.log('[AccountDetail] Fetching balance...');
-      const balanceResult = await getAccountBalance(token, accountUid);
-      if (balanceResult.success) {
-        console.log('[AccountDetail] Balance fetch successful');
-        setBalance(balanceResult.data);
-      } else {
-        console.error('[AccountDetail] Failed to fetch balance:', balanceResult.error);
-      }
-
-      // Fetch transactions using the defaultCategory from route params
-      console.log('[AccountDetail] Fetching transactions...');
-      const feedResult = await getTransactionFeed(token, accountUid, defaultCategory);
-      if (feedResult.success) {
-        console.log('[AccountDetail] Transaction fetch successful, got', feedResult.data.feedItems.length, 'items');
-        setTransactions(feedResult.data.feedItems);
-      } else {
-        console.error('[AccountDetail] Failed to fetch transactions:', feedResult.error);
-      }
-
-      setLastUpdated(new Date());
-      console.log('[AccountDetail] ========== FETCH COMPLETE ==========');
-    } catch (err) {
-      console.error('[AccountDetail] Error fetching data:', err);
-      console.error('[AccountDetail] Error type:', err?.constructor?.name);
-      console.error('[AccountDetail] Error message:', err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
+      setLoadingBalance(true);
+      setLoadingTransactions(true);
     }
+
+    const fetchBalance = async () => {
+      try {
+        console.log('[AccountDetail] Fetching balance...');
+        const result = await getAccountBalance(token, accountUid);
+        if (result.success) {
+          console.log('[AccountDetail] Balance fetch successful');
+          setBalance(result.data);
+          setLastUpdated(new Date());
+        } else {
+          console.error('[AccountDetail] Failed to fetch balance:', result.error);
+        }
+      } catch (err) {
+        console.error('[AccountDetail] Balance fetch error:', err);
+      } finally {
+        setLoadingBalance(false);
+      }
+    };
+
+    const fetchTransactions = async () => {
+      try {
+        console.log('[AccountDetail] Fetching transactions...');
+        const result = await getTransactionFeed(token, accountUid, defaultCategory);
+        if (result.success) {
+          console.log('[AccountDetail] Transaction fetch successful, got', result.data.feedItems.length, 'items');
+          setTransactions(result.data.feedItems);
+        } else {
+          console.error('[AccountDetail] Failed to fetch transactions:', result.error);
+        }
+      } catch (err) {
+        console.error('[AccountDetail] Transaction fetch error:', err);
+      } finally {
+        setLoadingTransactions(false);
+        if (isRefresh) setRefreshing(false);
+      }
+    };
+
+    // Fire both in parallel - each updates its own state as it resolves
+    await Promise.all([fetchBalance(), fetchTransactions()]);
+    console.log('[AccountDetail] ========== FETCH COMPLETE ==========');
   };
 
   // Reload data when screen comes into focus
@@ -217,7 +225,8 @@ export default function AccountDetailScreen({ navigation, route }: AccountDetail
     }
   };
 
-  if (loading) {
+  // Only block render until balance is ready - transactions load inline
+  if (loadingBalance && balance === null) {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -270,41 +279,47 @@ export default function AccountDetailScreen({ navigation, route }: AccountDetail
           {/* Balance Section */}
           {balance ? (
             <View style={styles.balanceSection}>
-              <Text style={styles.balanceLabel}>Available Balance</Text>
-              <Text style={styles.balanceAmount}>
-                {formatCurrency(
-                  balance.effectiveBalance.minorUnits,
-                  balance.effectiveBalance.currency
-                )}
-              </Text>
-              
-              <View style={styles.balanceDetails}>
-                <View style={styles.balanceRow}>
-                  <Text style={styles.balanceDetailLabel}>Cleared</Text>
-                  <Text style={styles.balanceDetailValue}>
-                    {formatCurrency(
-                      balance.clearedBalance.minorUnits,
-                      balance.clearedBalance.currency
-                    )}
-                  </Text>
-                </View>
-                
-                {balance.pendingTransactions.minorUnits !== 0 && (
+              {/* Header row: label + last updated */}
+              <View style={styles.balanceLabelRow}>
+                <Text style={styles.balanceLabel}>Available Balance</Text>
+                <Text style={styles.lastUpdated}>
+                  {formatRelativeTime(lastUpdated.toISOString())}
+                </Text>
+              </View>
+
+              {/* Main row: big amount + cleared/pending stack */}
+              <View style={styles.balanceMainRow}>
+                <Text style={styles.balanceAmount}>
+                  {formatCurrency(
+                    balance.effectiveBalance.minorUnits,
+                    balance.effectiveBalance.currency
+                  )}
+                </Text>
+
+                <View style={styles.balanceDetails}>
                   <View style={styles.balanceRow}>
-                    <Text style={styles.balanceDetailLabel}>Pending</Text>
+                    <Text style={styles.balanceDetailLabel}>Cleared</Text>
                     <Text style={styles.balanceDetailValue}>
                       {formatCurrency(
-                        balance.pendingTransactions.minorUnits,
-                        balance.pendingTransactions.currency
+                        balance.clearedBalance.minorUnits,
+                        balance.clearedBalance.currency
                       )}
                     </Text>
                   </View>
-                )}
+
+                  {balance.pendingTransactions.minorUnits !== 0 && (
+                    <View style={styles.balanceRow}>
+                      <Text style={styles.balanceDetailLabel}>Pending</Text>
+                      <Text style={styles.balanceDetailValue}>
+                        {formatCurrency(
+                          balance.pendingTransactions.minorUnits,
+                          balance.pendingTransactions.currency
+                        )}
+                      </Text>
+                    </View>
+                  )}
+                </View>
               </View>
-              
-              <Text style={styles.lastUpdated}>
-                Last updated: {formatRelativeTime(lastUpdated.toISOString())}
-              </Text>
             </View>
           ) : (
             <View style={styles.balanceSection}>
@@ -316,9 +331,14 @@ export default function AccountDetailScreen({ navigation, route }: AccountDetail
           <View style={styles.transactionsSection}>
             <Text style={styles.sectionTitle}>Recent Transactions</Text>
             
-            {transactions.length === 0 ? (
+            {loadingTransactions ? (
+              <View style={styles.transactionsLoading}>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text style={styles.transactionsLoadingText}>Loading transactions...</Text>
+              </View>
+            ) : transactions.length === 0 ? (
               <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No transactions yet</Text>
+                <Text style={styles.emptyText}>No transactions in the last 7 days</Text>
               </View>
             ) : (
               transactions.map((transaction, index) => {
@@ -438,46 +458,66 @@ const styles = StyleSheet.create({
   balanceSection: {
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
-    padding: spacing.lg,
+    padding: spacing.md,
     marginBottom: spacing.md,
+  },
+  balanceLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    marginBottom: spacing.xs,
   },
   balanceLabel: {
     fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.medium,
     color: colors.textSecondary,
-    marginBottom: spacing.xs,
+  },
+  lastUpdated: {
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.regular,
+    color: colors.textDisabled,
+  },
+  balanceMainRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
   },
   balanceAmount: {
     fontSize: typography.fontSize.xxxl,
     fontWeight: typography.fontWeight.bold,
     color: colors.textPrimary,
-    marginBottom: spacing.md,
   },
   balanceDetails: {
-    marginBottom: spacing.md,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
   },
   balanceRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: spacing.sm,
     marginBottom: spacing.xs,
   },
   balanceDetailLabel: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.regular,
-    color: colors.textSecondary,
-  },
-  balanceDetailValue: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
-  },
-  lastUpdated: {
     fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.regular,
     color: colors.textSecondary,
   },
+  balanceDetailValue: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.textPrimary,
+  },
   transactionsSection: {
     marginTop: spacing.sm,
+  },
+  transactionsLoading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.lg,
+    gap: spacing.sm,
+  },
+  transactionsLoadingText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
   },
   sectionTitle: {
     fontSize: typography.fontSize.lg,
