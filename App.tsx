@@ -5,6 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { RootStackParamList } from './src/types';
 import HomeScreen from './src/screens/HomeScreen';
 import AddAccountScreen from './src/screens/AddAccountScreen';
+import AccountDetailScreen from './src/screens/AccountDetailScreen';
 import { getAccounts } from './src/services/storage';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import { colors } from './src/theme';
@@ -53,6 +54,7 @@ export default function App(): React.JSX.Element {
         >
           <Stack.Screen name="Home" component={HomeScreen} />
           <Stack.Screen name="AddAccount" component={AddAccountScreen} />
+          <Stack.Screen name="AccountDetail" component={AccountDetailScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </>

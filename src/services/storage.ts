@@ -10,6 +10,7 @@ export interface StoredAccount {
   accountUid: string;
   accountName: string;
   accountType: string;
+  defaultCategory: string;
   token: string;
   addedAt: number;
 }
@@ -18,30 +19,47 @@ export interface StoredAccount {
  * Get all stored accounts
  */
 export async function getAccounts(): Promise<StoredAccount[]> {
+  console.log('[Storage] Getting all accounts...');
   const json = await SecureStore.getItemAsync(ACCOUNTS_KEY);
   if (!json) {
+    console.log('[Storage] No accounts found in storage');
     return [];
   }
-  return JSON.parse(json);
+  const accounts = JSON.parse(json);
+  console.log('[Storage] Found', accounts.length, 'account(s)');
+  return accounts;
 }
 
 /**
  * Add a new account with its token
  */
 export async function addAccount(account: StoredAccount): Promise<void> {
+  console.log('[Storage] ========== ADDING ACCOUNT ==========');
+  console.log('[Storage] Account to add:', account.accountName, '(' + account.accountUid + ')');
+  
   const accounts = await getAccounts();
+  console.log('[Storage] Current accounts in storage:', accounts.length);
   
   // Check if account already exists
   const existingIndex = accounts.findIndex(a => a.accountUid === account.accountUid);
   if (existingIndex >= 0) {
+    console.log('[Storage] Account already exists at index', existingIndex, '- UPDATING');
     // Update existing account
     accounts[existingIndex] = account;
   } else {
+    console.log('[Storage] Account is new - ADDING to array');
     // Add new account
     accounts.push(account);
   }
   
+  console.log('[Storage] Total accounts after operation:', accounts.length);
+  console.log('[Storage] Account names:', accounts.map(a => a.accountName).join(', '));
+  console.log('[Storage] Saving to SecureStore...');
+  
   await SecureStore.setItemAsync(ACCOUNTS_KEY, JSON.stringify(accounts));
+  
+  console.log('[Storage] Saved successfully!');
+  console.log('[Storage] ========== ADD ACCOUNT COMPLETE ==========');
 }
 
 /**
@@ -60,4 +78,11 @@ export async function getAccountToken(accountUid: string): Promise<string | null
   const accounts = await getAccounts();
   const account = accounts.find(a => a.accountUid === accountUid);
   return account?.token || null;
+}
+
+/**
+ * Delete all accounts (DEBUG ONLY)
+ */
+export async function deleteAllAccounts(): Promise<void> {
+  await SecureStore.setItemAsync(ACCOUNTS_KEY, JSON.stringify([]));
 }

@@ -8,10 +8,13 @@ export type {
   CurrencyAndAmount,
   ApiError,
   ApiResponse,
+  FeedItem,
+  FeedResponse,
 } from './api';
 
 export type {
   RootStackParamList,
   HomeScreenProps,
   AddAccountScreenProps,
+  AccountDetailScreenProps,
 } from './navigation';

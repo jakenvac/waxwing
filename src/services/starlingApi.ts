@@ -2,7 +2,7 @@
  * Starling Bank API service
  * Handles authentication and API requests
  */
-import type { AccountsResponse, Balance, ApiResponse } from '../types';
+import type { AccountsResponse, Balance, ApiResponse, FeedResponse } from '../types';
 
 // Use production API for live tokens
 const API_BASE_URL = 'https://api.starlingbank.com';
@@ -16,10 +16,12 @@ async function makeRequest<T>(
   accessToken: string
 ): Promise<ApiResponse<T>> {
   try {
-    console.log(`[API] Making request to: ${API_BASE_URL}${endpoint}`);
+    const fullUrl = `${API_BASE_URL}${endpoint}`;
+    console.log(`[API] Making request to: ${fullUrl}`);
+    console.log(`[API] Token (first 10 chars): ${accessToken.substring(0, 10)}...`);
     console.log(`[API] Token length: ${accessToken.length} chars`);
     
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const response = await fetch(fullUrl, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
@@ -29,21 +31,40 @@ async function makeRequest<T>(
     });
 
     console.log(`[API] Response status: ${response.status} ${response.statusText}`);
+    console.log(`[API] Response headers:`, JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2));
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.log('[API] Error response:', errorData);
+      const errorText = await response.text();
+      console.log('[API] Error response body:', errorText);
+      
+      let errorData: any = {};
+      try {
+        errorData = JSON.parse(errorText);
+      } catch (e) {
+        console.log('[API] Could not parse error response as JSON');
+      }
+      
       return {
         success: false,
-        error: errorData.error_description || errorData.error || `HTTP ${response.status}: ${response.statusText}`,
+        error: errorData.error_description || errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`,
       };
     }
 
-    const data = await response.json();
-    console.log('[API] Success! Received data');
+    const responseText = await response.text();
+    console.log('[API] Response body length:', responseText.length, 'chars');
+    
+    const data = JSON.parse(responseText);
+    console.log('[API] Success! Parsed response data');
+    
     return { success: true, data };
   } catch (error) {
     console.log('[API] Request failed with error:', error);
+    console.log('[API] Error type:', error?.constructor?.name);
+    console.log('[API] Error message:', error instanceof Error ? error.message : String(error));
+    if (error instanceof Error && error.stack) {
+      console.log('[API] Error stack:', error.stack);
+    }
+    
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Network request failed',
@@ -80,6 +101,34 @@ export async function getAccountBalance(
   accountUid: string
 ): Promise<ApiResponse<Balance>> {
   return makeRequest<Balance>(`/api/v2/accounts/${accountUid}/balance`, accessToken);
+}
+
+/**
+ * Get transaction feed for a specific account category
+ * GET /api/v2/feed/account/{accountUid}/category/{categoryUid}?changesSince={date}
+ * @param accessToken PAT for authentication
+ * @param accountUid Account UID
+ * @param categoryUid Category UID (use account's defaultCategory)
+ * @param changesSince ISO 8601 date-time string (defaults to 7 days ago if not provided)
+ */
+export async function getTransactionFeed(
+  accessToken: string,
+  accountUid: string,
+  categoryUid: string,
+  changesSince?: string
+): Promise<ApiResponse<FeedResponse>> {
+  // Default to 7 days ago if not provided
+  const since = changesSince || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  
+  console.log('[API] Fetching transaction feed...');
+  console.log('[API]   accountUid:', accountUid);
+  console.log('[API]   categoryUid:', categoryUid);
+  console.log('[API]   changesSince:', since);
+  
+  return makeRequest<FeedResponse>(
+    `/api/v2/feed/account/${accountUid}/category/${categoryUid}?changesSince=${encodeURIComponent(since)}`,
+    accessToken
+  );
 }
 
 /**

@@ -55,3 +55,32 @@ export interface ApiError {
 export type ApiResponse<T> = 
   | { success: true; data: T }
   | { success: false; error: string };
+
+/**
+ * Transaction feed item from GET /api/v2/feed/account/{accountUid}/category/{categoryUid}
+ */
+export interface FeedItem {
+  feedItemUid: string;
+  categoryUid: string;
+  amount: CurrencyAndAmount;
+  sourceAmount: CurrencyAndAmount;
+  direction: 'IN' | 'OUT';
+  updatedAt: string; // ISO 8601 timestamp
+  transactionTime: string; // ISO 8601 timestamp
+  settlementTime?: string; // ISO 8601 timestamp
+  source: string; // e.g., "MASTER_CARD", "FASTER_PAYMENTS_IN", "INTERNAL_TRANSFER"
+  status: 'PENDING' | 'REVERSED' | 'SETTLED' | 'DECLINED' | 'REFUNDED' | 'RETRYING' | 'ACCOUNT_CHECK';
+  counterPartyType: string; // e.g., "CATEGORY", "PAYEE", "MERCHANT", "SENDER"
+  counterPartyName?: string; // e.g., "Tesco", merchant or payee name
+  counterPartySubEntityName?: string;
+  counterPartySubEntityIdentifier?: string;
+  reference?: string;
+  country?: string;
+  spendingCategory?: string;
+  hasAttachment: boolean;
+  hasReceipt: boolean;
+}
+
+export interface FeedResponse {
+  feedItems: FeedItem[];
+}

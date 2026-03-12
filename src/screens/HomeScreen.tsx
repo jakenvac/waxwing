@@ -14,7 +14,7 @@ import type { HomeScreenProps } from '../types';
 import type { Balance } from '../types';
 import { colors, typography, spacing, borderRadius } from '../theme';
 import { getAccountBalance, formatCurrency } from '../services/starlingApi';
-import { getAccounts, type StoredAccount } from '../services/storage';
+import { getAccounts, deleteAllAccounts, type StoredAccount } from '../services/storage';
 import { useFocusEffect } from '@react-navigation/native';
 
 export default function HomeScreen({ navigation }: HomeScreenProps) {
@@ -88,6 +88,13 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   // Handle add account
   const handleAddAccount = () => {
     navigation.navigate('AddAccount');
+  };
+
+  // DEBUG: Handle delete all accounts
+  const handleDeleteAll = async () => {
+    await deleteAllAccounts();
+    setAccounts([]);
+    setBalances({});
   };
 
   // Handle scroll to update indicator position (using Animated for performance)
@@ -179,18 +186,27 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           <Text style={styles.title}>Waxwing</Text>
           <Text style={styles.subtitle}>Accounts</Text>
         </View>
-        <TouchableOpacity 
-          style={[
-            styles.addIconButton,
-            focusedIndex === -1 && styles.focusedElement
-          ]}
-          onPress={handleAddAccount}
-          onFocus={() => setFocusedIndex(-1)}
-          onBlur={() => setFocusedIndex(-2)}
-          activeOpacity={0.7}
-        >
-          <Icon name="bank-plus" size={32} color={colors.accent} />
-        </TouchableOpacity>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity 
+            style={styles.deleteButton}
+            onPress={handleDeleteAll}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.deleteButtonText}>DELETE</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[
+              styles.addIconButton,
+              focusedIndex === -1 && styles.focusedElement
+            ]}
+            onPress={handleAddAccount}
+            onFocus={() => setFocusedIndex(-1)}
+            onBlur={() => setFocusedIndex(-2)}
+            activeOpacity={0.7}
+          >
+            <Icon name="bank-plus" size={32} color={colors.accent} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Scrollable Account List */}
@@ -235,8 +251,13 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                   onFocus={() => setFocusedIndex(index)}
                   onBlur={() => setFocusedIndex(-2)}
                   onPress={() => {
-                    // TODO: Navigate to account detail when implemented
-                    console.log('[Home] Account pressed:', account.accountName);
+                    navigation.navigate('AccountDetail', {
+                      accountUid: account.accountUid,
+                      accountName: account.accountName,
+                      accountType: account.accountType,
+                      defaultCategory: account.defaultCategory,
+                      token: account.token,
+                    });
                   }}
                 >
                   <View style={styles.cardContent}>
@@ -309,6 +330,22 @@ const styles = StyleSheet.create({
     paddingTop: spacing.lg,
     paddingBottom: spacing.md,
     backgroundColor: colors.background,
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  deleteButton: {
+    backgroundColor: '#FF6B6B', // coral red for DEBUG visibility
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.md,
+  },
+  deleteButtonText: {
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.bold,
+    color: '#FFFFFF',
   },
   addIconButton: {
     padding: spacing.xs,
