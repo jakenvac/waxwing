@@ -1,6 +1,9 @@
+<div align="center">
+<img src="assets/icon.png" width="120" alt="Waxwing logo" />
+
 # Waxwing
 
-A read-only Starling Bank account viewer for Android, built for small "dumbphone" devices. Supports touch and D-pad/keypad navigation.
+A Starling Bank account viewer for Android, built for small "dumbphone" devices. Supports touch and D-pad/keypad navigation.
 
 [<img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="60">](http://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/jakenvac/waxwing)
 
@@ -8,6 +11,8 @@ A read-only Starling Bank account viewer for Android, built for small "dumbphone
 ![React Native](https://img.shields.io/badge/React%20Native-0.83.2-61dafb)
 ![Expo](https://img.shields.io/badge/Expo-~55.0.6-000020)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9.3-3178c6)
+
+</div>
 
 ## ⚠️ Use at your own risk
 
