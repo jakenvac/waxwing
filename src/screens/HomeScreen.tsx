@@ -14,16 +14,15 @@ import type { Balance } from '../types';
 import { colors, typography, spacing, borderRadius, touchTarget } from '../theme';
 import commonStyles from '../styles/commonStyles';
 import { getAccountBalance, formatCurrency } from '../services/starlingApi';
-import type { StoredAccount } from '../services/storage';
-import { useSession } from '../context/SessionContext';
+import { getAccounts, type StoredAccount } from '../services/storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { useScrollbar } from '../hooks/useScrollbar';
 import ScrollbarIndicator from '../components/ScrollbarIndicator';
 
 export default function HomeScreen({ navigation }: HomeScreenProps) {
-  const { accounts } = useSession();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [accounts, setAccounts] = useState<StoredAccount[]>([]);
   const [balances, setBalances] = useState<Record<string, Balance>>({});
   const {
     showScrollbar,
@@ -34,8 +33,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     handleContentSizeChange,
   } = useScrollbar();
 
-  // Fetch balances for all accounts in session
-  const fetchBalances = useCallback(async (isRefresh = false) => {
+  // Fetch account data
+  const fetchData = async (isRefresh = false) => {
     try {
       if (isRefresh) {
         setRefreshing(true);
@@ -43,16 +42,24 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         setLoading(true);
       }
 
-      console.log('[Home] Fetching balances for', accounts.length, 'account(s)...');
+      console.log('[Home] Fetching stored accounts...');
 
-      const balancePromises = accounts.map(async (account: StoredAccount) => {
+      // Get stored accounts
+      const storedAccounts = await getAccounts();
+      
+      console.log('[Home] Found', storedAccounts.length, 'stored accounts');
+      
+      setAccounts(storedAccounts);
+
+      // Fetch balance for each account
+      const balancePromises = storedAccounts.map(async (account) => {
         const balanceResult = await getAccountBalance(account.token, account.accountUid);
         return { accountUid: account.accountUid, balance: balanceResult };
       });
 
       const balanceResults = await Promise.all(balancePromises);
       const balanceMap: Record<string, Balance> = {};
-
+      
       for (const result of balanceResults) {
         if (result.balance.success) {
           balanceMap[result.accountUid] = result.balance.data;
@@ -61,23 +68,23 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
       setBalances(balanceMap);
     } catch (err) {
-      console.error('[Home] Error fetching balances:', err);
+      console.error('[Home] Error fetching data:', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [accounts]);
+  };
 
-  // Reload balances when screen comes into focus
+  // Reload accounts when screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      fetchBalances();
-    }, [fetchBalances])
+      fetchData();
+    }, [])
   );
 
   // Handle refresh
   const handleRefresh = () => {
-    fetchBalances(true);
+    fetchData(true);
   };
 
   // Handle add account
