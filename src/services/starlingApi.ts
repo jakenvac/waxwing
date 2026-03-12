@@ -19,8 +19,6 @@ async function makeRequest<T>(
   try {
     const fullUrl = `${API_BASE_URL}${endpoint}`;
     console.log(`[API] Making request to: ${fullUrl}`);
-    console.log(`[API] Token (first 10 chars): ${accessToken.substring(0, 10)}...`);
-    console.log(`[API] Token length: ${accessToken.length} chars`);
     
     const response = await fetch(fullUrl, {
       method: 'GET',
