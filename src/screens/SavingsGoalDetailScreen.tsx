@@ -134,12 +134,12 @@ export default function SavingsGoalDetailScreen({ navigation, route }: SavingsGo
     return `${day} ${month} ${timeStr}`;
   };
 
-  const handleModalSubmit = async (minorUnits: number) => {
+  const handleModalSubmit = async (minorUnits: number, reference?: string) => {
     setModalSubmitting(true);
     setModalError('');
     const result = modalMode === 'add'
-      ? await addMoneyToSavingsGoal(token, accountUid, savingsGoalUid, minorUnits, goal.totalSaved.currency)
-      : await withdrawMoneyFromSavingsGoal(token, accountUid, savingsGoalUid, minorUnits, goal.totalSaved.currency);
+      ? await addMoneyToSavingsGoal(token, accountUid, savingsGoalUid, minorUnits, goal.totalSaved.currency, reference)
+      : await withdrawMoneyFromSavingsGoal(token, accountUid, savingsGoalUid, minorUnits, goal.totalSaved.currency, reference);
     setModalSubmitting(false);
     if (result.success && result.data.success) {
       setModalVisible(false);

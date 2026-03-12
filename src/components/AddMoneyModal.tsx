@@ -25,7 +25,7 @@ interface Props {
   currency: string;
   submitting: boolean;
   error: string;
-  onSubmit: (minorUnits: number) => void;
+  onSubmit: (minorUnits: number, reference?: string) => void;
   onCancel: () => void;
 }
 
@@ -40,16 +40,17 @@ export default function AddMoneyModal({
   onCancel,
 }: Props) {
   const [input, setInput] = useState('');
+  const [reference, setReference] = useState('');
 
-  // Clear input each time the modal opens
+  // Clear inputs each time the modal opens
   useEffect(() => {
-    if (visible) setInput('');
+    if (visible) { setInput(''); setReference(''); }
   }, [visible]);
 
   const handleSubmit = () => {
     const parsed = parseFloat(input);
     if (isNaN(parsed) || parsed <= 0) return;
-    onSubmit(Math.round(parsed * 100));
+    onSubmit(Math.round(parsed * 100), reference.trim() || undefined);
   };
 
   const parsedAmount = parseFloat(input);
@@ -92,6 +93,18 @@ export default function AddMoneyModal({
             keyboardType="decimal-pad"
             autoFocus
             editable={!submitting}
+          />
+
+          <TextInput
+            style={styles.referenceInput}
+            value={reference}
+            onChangeText={t => setReference(t.slice(0, 100))}
+            placeholder="Reference (optional)"
+            placeholderTextColor={colors.textDisabled}
+            autoCapitalize="sentences"
+            autoCorrect={false}
+            editable={!submitting}
+            returnKeyType="done"
           />
 
           {isOverLimit && input.length > 0 && (
@@ -170,6 +183,18 @@ const styles = StyleSheet.create({
     minHeight: touchTarget.minHeight,
     marginBottom: spacing.sm,
     textAlign: 'center',
+  },
+  referenceInput: {
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    fontSize: typography.fontSize.base,
+    color: colors.textPrimary,
+    minHeight: touchTarget.minHeight,
+    marginBottom: spacing.sm,
   },
   validationError: {
     fontSize: typography.fontSize.sm,
