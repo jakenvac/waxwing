@@ -1,6 +1,6 @@
 /**
- * Modal for adding money to a savings goal.
- * The parent is responsible for fetching the available balance and passing it in.
+ * Modal for adding or withdrawing money from a savings goal.
+ * The parent is responsible for fetching balances and passing them in.
  */
 import React, { useState, useEffect } from 'react';
 import {
@@ -19,8 +19,9 @@ import { formatCurrency } from '../services/starlingApi';
 
 interface Props {
   visible: boolean;
-  /** Available balance in minor units (effectiveBalance — includes overdraft) */
-  availableMinorUnits: number;
+  mode: 'add' | 'withdraw';
+  /** For add: effectiveBalance + acceptedOverdraft. For withdraw: totalSaved. Both in minor units. */
+  limitMinorUnits: number;
   currency: string;
   submitting: boolean;
   error: string;
@@ -30,7 +31,8 @@ interface Props {
 
 export default function AddMoneyModal({
   visible,
-  availableMinorUnits,
+  mode,
+  limitMinorUnits,
   currency,
   submitting,
   error,
@@ -47,14 +49,23 @@ export default function AddMoneyModal({
   const handleSubmit = () => {
     const parsed = parseFloat(input);
     if (isNaN(parsed) || parsed <= 0) return;
-    const minorUnits = Math.round(parsed * 100);
-    onSubmit(minorUnits);
+    onSubmit(Math.round(parsed * 100));
   };
 
   const parsedAmount = parseFloat(input);
   const minorUnitsEntered = isNaN(parsedAmount) ? 0 : Math.round(parsedAmount * 100);
-  const isOverAvailable = minorUnitsEntered > availableMinorUnits;
+  const isOverLimit = minorUnitsEntered > limitMinorUnits;
   const isInvalid = isNaN(parsedAmount) || parsedAmount <= 0;
+
+  const isAdd = mode === 'add';
+  const title = isAdd ? 'Add money' : 'Withdraw money';
+  const limitLabel = isAdd
+    ? `Available: ${formatCurrency(limitMinorUnits, currency)}`
+    : `In goal: ${formatCurrency(limitMinorUnits, currency)}`;
+  const overLimitMessage = isAdd
+    ? 'Amount exceeds available balance'
+    : 'Amount exceeds savings goal balance';
+  const confirmLabel = isAdd ? 'Add' : 'Withdraw';
 
   return (
     <Modal
@@ -68,11 +79,9 @@ export default function AddMoneyModal({
         behavior={Platform.OS === 'android' ? 'height' : 'padding'}
       >
         <View style={styles.sheet}>
-          <Text style={styles.title}>Add money</Text>
+          <Text style={styles.title}>{title}</Text>
 
-          <Text style={styles.availableLabel}>
-            Available: {formatCurrency(availableMinorUnits, currency)}
-          </Text>
+          <Text style={styles.limitLabel}>{limitLabel}</Text>
 
           <TextInput
             style={styles.input}
@@ -85,10 +94,8 @@ export default function AddMoneyModal({
             editable={!submitting}
           />
 
-          {isOverAvailable && input.length > 0 && (
-            <Text style={styles.validationError}>
-              Amount exceeds available balance
-            </Text>
+          {isOverLimit && input.length > 0 && (
+            <Text style={styles.validationError}>{overLimitMessage}</Text>
           )}
 
           {error ? (
@@ -108,16 +115,16 @@ export default function AddMoneyModal({
             <TouchableOpacity
               style={[
                 styles.confirmButton,
-                (isInvalid || isOverAvailable || submitting) && styles.confirmButtonDisabled,
+                (isInvalid || isOverLimit || submitting) && styles.confirmButtonDisabled,
               ]}
               onPress={handleSubmit}
-              disabled={isInvalid || isOverAvailable || submitting}
+              disabled={isInvalid || isOverLimit || submitting}
               activeOpacity={0.7}
             >
               {submitting ? (
                 <ActivityIndicator color={colors.textPrimary} />
               ) : (
-                <Text style={styles.confirmButtonText}>Add</Text>
+                <Text style={styles.confirmButtonText}>{confirmLabel}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -145,7 +152,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     marginBottom: spacing.sm,
   },
-  availableLabel: {
+  limitLabel: {
     fontSize: typography.fontSize.sm,
     color: colors.textSecondary,
     marginBottom: spacing.md,

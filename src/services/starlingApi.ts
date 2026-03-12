@@ -201,6 +201,29 @@ export async function addMoneyToSavingsGoal(
 }
 
 /**
+ * Withdraw money from a savings goal.
+ * Requires: token
+ * PUT /api/v2/account/{accountUid}/savings-goals/{savingsGoalUid}/withdraw-money/{transferUid}
+ */
+export async function withdrawMoneyFromSavingsGoal(
+  accessToken: string,
+  accountUid: string,
+  savingsGoalUid: string,
+  minorUnits: number,
+  currency: string
+): Promise<ApiResponse<SavingsGoalTransferResponse>> {
+  const transferUid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+  return makePutRequest<SavingsGoalTransferResponse>(
+    `/api/v2/account/${accountUid}/savings-goals/${savingsGoalUid}/withdraw-money/${transferUid}`,
+    accessToken,
+    { amount: { currency, minorUnits } }
+  );
+}
+
+/**
  * Get savings goals for a specific account
  * GET /api/v2/account/{accountUid}/savings-goals
  */

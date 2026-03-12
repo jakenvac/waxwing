@@ -13,7 +13,7 @@ import Icon from '@react-native-vector-icons/material-design-icons';
 import type { SavingsGoalDetailScreenProps } from '../types';
 import type { SavingsGoal, FeedItem, Balance } from '../types';
 import { colors, typography, spacing, borderRadius, touchTarget } from '../theme';
-import { getSavingsGoals, getTransactionFeed, getAccountBalance, addMoneyToSavingsGoal, formatCurrency } from '../services/starlingApi';
+import { getSavingsGoals, getTransactionFeed, getAccountBalance, addMoneyToSavingsGoal, withdrawMoneyFromSavingsGoal, formatCurrency } from '../services/starlingApi';
 import { useFocusEffect } from '@react-navigation/native';
 import { useScrollbar } from '../hooks/useScrollbar';
 import ScrollbarIndicator from '../components/ScrollbarIndicator';
@@ -59,10 +59,11 @@ export default function SavingsGoalDetailScreen({ navigation, route }: SavingsGo
   // Account balance for available funds check in the add money modal
   const [accountBalance, setAccountBalance] = useState<Balance | null>(null);
 
-  // Add money modal state
-  const [addMoneyVisible, setAddMoneyVisible] = useState(false);
-  const [addMoneySubmitting, setAddMoneySubmitting] = useState(false);
-  const [addMoneyError, setAddMoneyError] = useState('');
+  // Transfer modal state — shared between add and withdraw
+  const [modalMode, setModalMode] = useState<'add' | 'withdraw'>('add');
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalSubmitting, setModalSubmitting] = useState(false);
+  const [modalError, setModalError] = useState('');
 
   const {
     showScrollbar,
@@ -133,25 +134,18 @@ export default function SavingsGoalDetailScreen({ navigation, route }: SavingsGo
     return `${day} ${month} ${timeStr}`;
   };
 
-  const handleAddMoneySubmit = async (minorUnits: number) => {
-    setAddMoneySubmitting(true);
-    setAddMoneyError('');
-    const result = await addMoneyToSavingsGoal(
-      token,
-      accountUid,
-      savingsGoalUid,
-      minorUnits,
-      goal.totalSaved.currency
-    );
-    setAddMoneySubmitting(false);
+  const handleModalSubmit = async (minorUnits: number) => {
+    setModalSubmitting(true);
+    setModalError('');
+    const result = modalMode === 'add'
+      ? await addMoneyToSavingsGoal(token, accountUid, savingsGoalUid, minorUnits, goal.totalSaved.currency)
+      : await withdrawMoneyFromSavingsGoal(token, accountUid, savingsGoalUid, minorUnits, goal.totalSaved.currency);
+    setModalSubmitting(false);
     if (result.success && result.data.success) {
-      setAddMoneyVisible(false);
-      // Refresh goal and transactions to reflect the transfer
+      setModalVisible(false);
       fetchData(true);
     } else {
-      setAddMoneyError(
-        result.success ? 'Transfer failed. Please try again.' : result.error
-      );
+      setModalError(result.success ? 'Transfer failed. Please try again.' : result.error);
     }
   };
 
@@ -161,17 +155,20 @@ export default function SavingsGoalDetailScreen({ navigation, route }: SavingsGo
   return (
     <View style={commonStyles.container}>
       <AddMoneyModal
-        visible={addMoneyVisible}
-        availableMinorUnits={
-          accountBalance
-            ? accountBalance.effectiveBalance.minorUnits + accountBalance.acceptedOverdraft.minorUnits
-            : 0
+        visible={modalVisible}
+        mode={modalMode}
+        limitMinorUnits={
+          modalMode === 'add'
+            ? (accountBalance
+                ? accountBalance.effectiveBalance.minorUnits + accountBalance.acceptedOverdraft.minorUnits
+                : 0)
+            : goal.totalSaved.minorUnits
         }
         currency={goal.totalSaved.currency}
-        submitting={addMoneySubmitting}
-        error={addMoneyError}
-        onSubmit={handleAddMoneySubmit}
-        onCancel={() => { setAddMoneyVisible(false); setAddMoneyError(''); }}
+        submitting={modalSubmitting}
+        error={modalError}
+        onSubmit={handleModalSubmit}
+        onCancel={() => { setModalVisible(false); setModalError(''); }}
       />
       <ScreenHeader
         title={goal.name}
@@ -238,7 +235,7 @@ export default function SavingsGoalDetailScreen({ navigation, route }: SavingsGo
               activeOpacity={0.7}
               nextFocusUp={findNodeHandle(backButtonRef.current) ?? undefined}
               nextFocusDown={findNodeHandle(withdrawMoneyRef.current) ?? undefined}
-              onPress={() => { setAddMoneyError(''); setAddMoneyVisible(true); }}
+              onPress={() => { setModalMode('add'); setModalError(''); setModalVisible(true); }}
             >
               <Icon name="bank-transfer-in" size={22} color={colors.textSecondary} />
               <Text style={styles.actionLabel}>Add Money</Text>
@@ -250,6 +247,7 @@ export default function SavingsGoalDetailScreen({ navigation, route }: SavingsGo
               activeOpacity={0.7}
               nextFocusUp={findNodeHandle(addMoneyRef.current) ?? undefined}
               nextFocusDown={findNodeHandle(firstTransactionRef.current) ?? undefined}
+              onPress={() => { setModalMode('withdraw'); setModalError(''); setModalVisible(true); }}
             >
               <Icon name="bank-transfer-out" size={22} color={colors.textSecondary} />
               <Text style={styles.actionLabel}>Withdraw Money</Text>
