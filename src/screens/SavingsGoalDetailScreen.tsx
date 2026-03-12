@@ -162,7 +162,11 @@ export default function SavingsGoalDetailScreen({ navigation, route }: SavingsGo
     <View style={commonStyles.container}>
       <AddMoneyModal
         visible={addMoneyVisible}
-        availableMinorUnits={accountBalance?.effectiveBalance.minorUnits ?? 0}
+        availableMinorUnits={
+          accountBalance
+            ? accountBalance.effectiveBalance.minorUnits + accountBalance.acceptedOverdraft.minorUnits
+            : 0
+        }
         currency={goal.totalSaved.currency}
         submitting={addMoneySubmitting}
         error={addMoneyError}
