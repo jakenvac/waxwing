@@ -120,7 +120,23 @@ export default function SavingsGoalsScreen({ navigation, route }: SavingsGoalsSc
               const pct = goal.savedPercentage ?? null;
 
               return (
-                <TouchableOpacity key={goal.savingsGoalUid} style={styles.goalCard} activeOpacity={0.7}>
+                <TouchableOpacity
+                  key={goal.savingsGoalUid}
+                  style={styles.goalCard}
+                  activeOpacity={0.7}
+                  onPress={() => navigation.navigate('SavingsGoalDetail', {
+                    accountUid,
+                    accountName,
+                    token,
+                    savingsGoalUid: goal.savingsGoalUid,
+                    goalName: goal.name,
+                    totalSavedMinorUnits: goal.totalSaved.minorUnits,
+                    totalSavedCurrency: goal.totalSaved.currency,
+                    targetMinorUnits: goal.target?.minorUnits,
+                    targetCurrency: goal.target?.currency,
+                    savedPercentage: goal.savedPercentage,
+                  })}
+                >
                   <View style={styles.goalRow}>
                     <Text style={styles.goalName} numberOfLines={1}>{goal.name}</Text>
                     <Text style={styles.goalSaved}>{saved}</Text>

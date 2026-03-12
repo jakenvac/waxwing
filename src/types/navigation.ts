@@ -18,6 +18,15 @@ export type RootStackParamList = {
     defaultCategory: string;
   };
   SavingsGoals: AccountRouteParams;
+  SavingsGoalDetail: AccountRouteParams & {
+    savingsGoalUid: string;
+    goalName: string;
+    totalSavedMinorUnits: number;
+    totalSavedCurrency: string;
+    targetMinorUnits?: number;
+    targetCurrency?: string;
+    savedPercentage?: number;
+  };
   Payees: AccountRouteParams;
   SendMoney: AccountRouteParams;
   ReceiveMoney: AccountRouteParams;
@@ -28,6 +37,7 @@ export type AddAccountScreenProps = NativeStackScreenProps<RootStackParamList, '
 export type SettingsScreenProps = NativeStackScreenProps<RootStackParamList, 'Settings'>;
 export type AccountDetailScreenProps = NativeStackScreenProps<RootStackParamList, 'AccountDetail'>;
 export type SavingsGoalsScreenProps = NativeStackScreenProps<RootStackParamList, 'SavingsGoals'>;
+export type SavingsGoalDetailScreenProps = NativeStackScreenProps<RootStackParamList, 'SavingsGoalDetail'>;
 export type PayeesScreenProps = NativeStackScreenProps<RootStackParamList, 'Payees'>;
 export type SendMoneyScreenProps = NativeStackScreenProps<RootStackParamList, 'SendMoney'>;
 export type ReceiveMoneyScreenProps = NativeStackScreenProps<RootStackParamList, 'ReceiveMoney'>;

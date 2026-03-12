@@ -22,6 +22,7 @@ export type {
   SettingsScreenProps,
   AccountDetailScreenProps,
   SavingsGoalsScreenProps,
+  SavingsGoalDetailScreenProps,
   PayeesScreenProps,
   SendMoneyScreenProps,
   ReceiveMoneyScreenProps,
