@@ -8,6 +8,7 @@ import {
   ScrollView,
   RefreshControl,
   Animated,
+  findNodeHandle,
 } from 'react-native';
 import Icon from '@react-native-vector-icons/material-design-icons';
 import type { AccountDetailScreenProps } from '../types';
@@ -18,6 +19,14 @@ import { useFocusEffect } from '@react-navigation/native';
 
 export default function AccountDetailScreen({ navigation, route }: AccountDetailScreenProps) {
   const { accountUid, accountName, accountType, defaultCategory, token } = route.params;
+
+  const backButtonRef = useRef<React.ElementRef<typeof TouchableOpacity>>(null);
+  const cogButtonRef = useRef<React.ElementRef<typeof TouchableOpacity>>(null);
+  const savingsGoalsRef = useRef<React.ElementRef<typeof TouchableOpacity>>(null);
+  const payeesRef = useRef<React.ElementRef<typeof TouchableOpacity>>(null);
+  const sendMoneyRef = useRef<React.ElementRef<typeof TouchableOpacity>>(null);
+  const receiveMoneyRef = useRef<React.ElementRef<typeof TouchableOpacity>>(null);
+  const firstTransactionRef = useRef<React.ElementRef<typeof TouchableOpacity>>(null);
   
   const [loadingBalance, setLoadingBalance] = useState(true);
   const [loadingTransactions, setLoadingTransactions] = useState(true);
@@ -26,7 +35,6 @@ export default function AccountDetailScreen({ navigation, route }: AccountDetail
   const [transactions, setTransactions] = useState<FeedItem[]>([]);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [showScrollbar, setShowScrollbar] = useState(false);
-  const [focusedIndex, setFocusedIndex] = useState<number>(-2); // Track focus for D-pad
   
   // Use Animated.Value for smooth scrollbar
   const scrollIndicatorOffset = useRef(new Animated.Value(0)).current;
@@ -240,14 +248,12 @@ export default function AccountDetailScreen({ navigation, route }: AccountDetail
       {/* Fixed Header */}
       <View style={styles.header}>
         <TouchableOpacity 
-          style={[
-            styles.backButton,
-            focusedIndex === -1 && styles.focusedElement
-          ]}
+          ref={backButtonRef}
+          style={styles.backButton}
           onPress={handleBack}
-          onFocus={() => setFocusedIndex(-1)}
-          onBlur={() => setFocusedIndex(-2)}
           activeOpacity={0.7}
+          nextFocusRight={findNodeHandle(cogButtonRef.current) ?? undefined}
+          nextFocusDown={findNodeHandle(savingsGoalsRef.current) ?? undefined}
         >
           <Icon name="arrow-left" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
@@ -255,6 +261,15 @@ export default function AccountDetailScreen({ navigation, route }: AccountDetail
           <Text style={styles.headerTitle}>{accountName}</Text>
           <Text style={styles.headerSubtitle}>{accountType}</Text>
         </View>
+        <TouchableOpacity
+          ref={cogButtonRef}
+          style={styles.cogButton}
+          onPress={() => navigation.navigate('Settings', { accountUid, accountName, token })}
+          activeOpacity={0.7}
+          nextFocusLeft={findNodeHandle(backButtonRef.current) ?? undefined}
+        >
+          <Icon name="cog-outline" size={26} color={colors.textSecondary} />
+        </TouchableOpacity>
       </View>
 
       {/* Scrollable Content */}
@@ -327,6 +342,30 @@ export default function AccountDetailScreen({ navigation, route }: AccountDetail
             </View>
           )}
 
+          {/* Quick Actions */}
+          <View style={styles.quickActionsSection}>
+            {[
+              { label: 'Savings Goals', icon: 'piggy-bank-outline', ref: savingsGoalsRef, upRef: backButtonRef, downRef: payeesRef, route: 'SavingsGoals' },
+              { label: 'Payees',        icon: 'account-multiple-outline', ref: payeesRef, upRef: savingsGoalsRef, downRef: sendMoneyRef, route: 'Payees' },
+              { label: 'Send Money',    icon: 'bank-transfer-out', ref: sendMoneyRef, upRef: payeesRef, downRef: receiveMoneyRef, route: 'SendMoney' },
+              { label: 'Receive Money', icon: 'bank-transfer-in',  ref: receiveMoneyRef, upRef: sendMoneyRef, downRef: firstTransactionRef, route: 'ReceiveMoney' },
+            ].map(({ label, icon, ref, upRef, downRef, route: targetRoute }, index, arr) => (
+              <TouchableOpacity
+                key={label}
+                ref={ref}
+                style={[styles.actionRow, index === arr.length - 1 && styles.actionRowLast]}
+                activeOpacity={0.7}
+                nextFocusUp={findNodeHandle(upRef.current) ?? undefined}
+                nextFocusDown={findNodeHandle(downRef.current) ?? undefined}
+                onPress={() => navigation.navigate(targetRoute as any, { accountUid, accountName, token })}
+              >
+                <Icon name={icon as any} size={22} color={colors.textSecondary} />
+                <Text style={styles.actionLabel}>{label}</Text>
+                <Icon name="chevron-right" size={20} color={colors.textDisabled} />
+              </TouchableOpacity>
+            ))}
+          </View>
+
           {/* Transactions Section */}
           <View style={styles.transactionsSection}>
             <Text style={styles.sectionTitle}>Recent Transactions</Text>
@@ -342,20 +381,16 @@ export default function AccountDetailScreen({ navigation, route }: AccountDetail
               </View>
             ) : (
               transactions.map((transaction, index) => {
-                const isFocused = focusedIndex === index;
                 const isDebit = transaction.direction === 'OUT';
                 const amountColor = isDebit ? '#FF6B6B' : '#10B981'; // vibrant coral red for debits, green for credits
                 
                 return (
                   <TouchableOpacity
                     key={transaction.feedItemUid}
-                    style={[
-                      styles.transactionCard,
-                      isFocused && styles.focusedElement
-                    ]}
-                    onFocus={() => setFocusedIndex(index)}
-                    onBlur={() => setFocusedIndex(-2)}
+                    ref={index === 0 ? firstTransactionRef : undefined}
+                    style={styles.transactionCard}
                     activeOpacity={0.7}
+                    nextFocusUp={index === 0 ? findNodeHandle(backButtonRef.current) ?? undefined : undefined}
                     onPress={() => {
                       console.log('[AccountDetail] Transaction pressed:', transaction.feedItemUid);
                       // TODO: Show transaction detail
@@ -433,6 +468,10 @@ const styles = StyleSheet.create({
   headerText: {
     flex: 1,
   },
+  cogButton: {
+    padding: spacing.xs,
+    marginLeft: spacing.sm,
+  },
   headerTitle: {
     fontSize: typography.fontSize.xl,
     fontWeight: typography.fontWeight.bold,
@@ -505,6 +544,30 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.semibold,
     color: colors.textPrimary,
+  },
+  quickActionsSection: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    marginBottom: spacing.md,
+    overflow: 'hidden',
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    gap: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  actionLabel: {
+    flex: 1,
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.textPrimary,
+  },
+  actionRowLast: {
+    borderBottomWidth: 0,
   },
   transactionsSection: {
     marginTop: spacing.sm,
@@ -582,9 +645,5 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     opacity: 0.6,
   },
-  focusedElement: {
-    borderWidth: 2,
-    borderColor: colors.accent,
-    borderRadius: borderRadius.lg,
-  },
+
 });

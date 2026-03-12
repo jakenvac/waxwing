@@ -23,7 +23,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const [accounts, setAccounts] = useState<StoredAccount[]>([]);
   const [balances, setBalances] = useState<Record<string, Balance>>({});
   const [showScrollbar, setShowScrollbar] = useState(false);
-  const [focusedIndex, setFocusedIndex] = useState<number>(-2); // Track which element is focused for styling
   
   // Use Animated.Value for smooth, performant scrollbar updates
   const scrollIndicatorOffset = useRef(new Animated.Value(0)).current;
@@ -195,13 +194,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             <Text style={styles.deleteButtonText}>DELETE</Text>
           </TouchableOpacity>
           <TouchableOpacity 
-            style={[
-              styles.addIconButton,
-              focusedIndex === -1 && styles.focusedElement
-            ]}
+            style={styles.addIconButton}
             onPress={handleAddAccount}
-            onFocus={() => setFocusedIndex(-1)}
-            onBlur={() => setFocusedIndex(-2)}
             activeOpacity={0.7}
           >
             <Icon name="bank-plus" size={32} color={colors.accent} />
@@ -237,19 +231,13 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               </Text>
             </View>
           ) : (
-            accounts.map((account, index) => {
+            accounts.map((account) => {
               const balance = balances[account.accountUid];
-              const isFocused = focusedIndex === index;
               return (
                 <TouchableOpacity 
                   key={account.accountUid}
-                  style={[
-                    styles.accountCard,
-                    isFocused && styles.focusedElement
-                  ]}
+                  style={styles.accountCard}
                   activeOpacity={0.7}
-                  onFocus={() => setFocusedIndex(index)}
-                  onBlur={() => setFocusedIndex(-2)}
                   onPress={() => {
                     navigation.navigate('AccountDetail', {
                       accountUid: account.accountUid,
@@ -448,9 +436,5 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     opacity: 0.6,
   },
-  focusedElement: {
-    borderWidth: 2,
-    borderColor: colors.accent,
-    borderRadius: borderRadius.lg,
-  },
+
 });

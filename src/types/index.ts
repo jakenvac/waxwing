@@ -14,7 +14,13 @@ export type {
 
 export type {
   RootStackParamList,
+  AccountRouteParams,
   HomeScreenProps,
   AddAccountScreenProps,
+  SettingsScreenProps,
   AccountDetailScreenProps,
+  SavingsGoalsScreenProps,
+  PayeesScreenProps,
+  SendMoneyScreenProps,
+  ReceiveMoneyScreenProps,
 } from './navigation';
