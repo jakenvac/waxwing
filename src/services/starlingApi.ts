@@ -2,7 +2,7 @@
  * Starling Bank API service
  * Handles authentication and API requests
  */
-import type { AccountsResponse, Balance, ApiResponse, FeedResponse } from '../types';
+import type { AccountsResponse, Balance, ApiResponse, FeedResponse, SavingsGoalsResponse } from '../types';
 
 // Use production API for live tokens
 const API_BASE_URL = 'https://api.starlingbank.com';
@@ -127,6 +127,20 @@ export async function getTransactionFeed(
   
   return makeRequest<FeedResponse>(
     `/api/v2/feed/account/${accountUid}/category/${categoryUid}?changesSince=${encodeURIComponent(since)}`,
+    accessToken
+  );
+}
+
+/**
+ * Get savings goals for a specific account
+ * GET /api/v2/account/{accountUid}/savings-goals
+ */
+export async function getSavingsGoals(
+  accessToken: string,
+  accountUid: string
+): Promise<ApiResponse<SavingsGoalsResponse>> {
+  return makeRequest<SavingsGoalsResponse>(
+    `/api/v2/account/${accountUid}/savings-goals`,
     accessToken
   );
 }

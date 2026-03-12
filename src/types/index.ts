@@ -10,6 +10,8 @@ export type {
   ApiResponse,
   FeedItem,
   FeedResponse,
+  SavingsGoal,
+  SavingsGoalsResponse,
 } from './api';
 
 export type {

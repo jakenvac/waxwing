@@ -84,3 +84,19 @@ export interface FeedItem {
 export interface FeedResponse {
   feedItems: FeedItem[];
 }
+
+/**
+ * Savings goal from GET /api/v2/account/{accountUid}/savings-goals
+ */
+export interface SavingsGoal {
+  savingsGoalUid: string;
+  name: string;
+  target?: CurrencyAndAmount;
+  totalSaved: CurrencyAndAmount;
+  savedPercentage?: number;
+  state: 'CREATING' | 'ACTIVE' | 'ARCHIVING' | 'ARCHIVED' | 'RESTORING' | 'PENDING';
+}
+
+export interface SavingsGoalsResponse {
+  savingsGoalList: SavingsGoal[];
+}
