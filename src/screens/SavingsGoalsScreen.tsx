@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
+  TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
   ScrollView,
@@ -119,7 +120,7 @@ export default function SavingsGoalsScreen({ navigation, route }: SavingsGoalsSc
               const pct = goal.savedPercentage ?? null;
 
               return (
-                <View key={goal.savingsGoalUid} style={styles.goalCard}>
+                <TouchableOpacity key={goal.savingsGoalUid} style={styles.goalCard} activeOpacity={0.7}>
                   <View style={styles.goalRow}>
                     <Text style={styles.goalName} numberOfLines={1}>{goal.name}</Text>
                     <Text style={styles.goalSaved}>{saved}</Text>
@@ -143,7 +144,7 @@ export default function SavingsGoalsScreen({ navigation, route }: SavingsGoalsSc
                       </View>
                     </>
                   )}
-                </View>
+                </TouchableOpacity>
               );
             })
           )}
