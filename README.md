@@ -13,7 +13,7 @@ A read-only Starling Bank account viewer for Android, built for small "dumbphone
 
 This app was vibe coded and **deals directly with your banking credentials** (Starling Personal Access Tokens). Use it at your own risk. No warranty is provided, express or implied.
 
-A core goal of this app is to be **read-only** — it is not intended to ever send money from your account. Savings goal top-ups and withdrawals (moving money between your main balance and savings spaces within the same account) are the only fund movements supported, and these are intentional, intra-account only.
+A core goal of this app is to **never enable money to leave your bank account**. Moving money between your main balance and savings goals (within the same account) is supported and intentional, but sending money to any external account or payee is not a feature and never will be.
 
 Your tokens are stored encrypted on-device using the Android Keystore via `expo-secure-store`. They are never transmitted anywhere other than directly to the official Starling Bank API (`https://api.starlingbank.com`).
 
@@ -22,7 +22,7 @@ Your tokens are stored encrypted on-device using the Android Keystore via `expo-
 - View balances across multiple Starling accounts (one Personal Access Token per account)
 - Transaction feed with debit/credit colouring and relative timestamps
 - Savings goals — view balances, progress, and transaction history
-- Add money to / withdraw money from savings goals
+- Move money between your main balance and savings goals
 - Supports small screens (480×640 minimum) and D-pad/keypad navigation
 - Dark purple theme optimised for low-power displays
 
