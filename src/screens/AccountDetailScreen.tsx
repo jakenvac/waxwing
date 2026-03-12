@@ -16,6 +16,7 @@ import { colors, typography, spacing, borderRadius, touchTarget } from '../theme
 import commonStyles from '../styles/commonStyles';
 import { getAccountBalance, getTransactionFeed, formatCurrency } from '../services/starlingApi';
 import { useFocusEffect } from '@react-navigation/native';
+import { formatTime, formatRelativeTime } from '../utils/formatTime';
 import { useScrollbar } from '../hooks/useScrollbar';
 import ScrollbarIndicator from '../components/ScrollbarIndicator';
 import ScreenHeader from '../components/ScreenHeader';
@@ -121,59 +122,6 @@ export default function AccountDetailScreen({ navigation, route }: AccountDetail
 
 
   // Format relative time (e.g., "2m ago", "1h ago")
-  const formatRelativeTime = (timestamp: string): string => {
-    const now = new Date();
-    const then = new Date(timestamp);
-    const diffMs = now.getTime() - then.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    
-    const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return `${diffHours}h ago`;
-    
-    const diffDays = Math.floor(diffHours / 24);
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays}d ago`;
-    
-    // Format as date for older transactions
-    return then.toLocaleDateString();
-  };
-
-  // Format transaction time to show date and time
-  const formatTime = (timestamp: string): string => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    
-    // Check if it's today
-    const isToday = date.toDateString() === now.toDateString();
-    
-    // Check if it's yesterday
-    const yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const isYesterday = date.toDateString() === yesterday.toDateString();
-    
-    // Format time
-    const hours = date.getHours();
-    const mins = date.getMinutes().toString().padStart(2, '0');
-    const ampm = hours >= 12 ? 'pm' : 'am';
-    const displayHours = hours % 12 || 12;
-    const timeStr = `${displayHours}:${mins}${ampm}`;
-    
-    // Format date
-    if (isToday) {
-      return `Today ${timeStr}`;
-    } else if (isYesterday) {
-      return `Yesterday ${timeStr}`;
-    } else {
-      // Show date (e.g., "12 Mar")
-      const day = date.getDate();
-      const month = date.toLocaleDateString('en-GB', { month: 'short' });
-      return `${day} ${month} ${timeStr}`;
-    }
-  };
-
   return (
     <View style={commonStyles.container}>
       {/* Fixed Header — always visible, even while balance is loading */}

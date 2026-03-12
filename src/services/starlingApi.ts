@@ -3,6 +3,7 @@
  * Handles authentication and API requests
  */
 import type { AccountsResponse, Balance, ApiResponse, FeedResponse, SavingsGoalsResponse, SavingsGoalTransferResponse } from '../types';
+import { generateUuid } from '../utils/uuid';
 
 // Use production API for live tokens
 const API_BASE_URL = 'https://api.starlingbank.com';
@@ -190,12 +191,8 @@ export async function addMoneyToSavingsGoal(
   currency: string,
   reference?: string
 ): Promise<ApiResponse<SavingsGoalTransferResponse>> {
-  const transferUid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-    const r = Math.random() * 16 | 0;
-    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
-  });
   return makePutRequest<SavingsGoalTransferResponse>(
-    `/api/v2/account/${accountUid}/savings-goals/${savingsGoalUid}/add-money/${transferUid}`,
+    `/api/v2/account/${accountUid}/savings-goals/${savingsGoalUid}/add-money/${generateUuid()}`,
     accessToken,
     { amount: { currency, minorUnits }, ...(reference ? { reference } : {}) }
   );
@@ -214,12 +211,8 @@ export async function withdrawMoneyFromSavingsGoal(
   currency: string,
   reference?: string
 ): Promise<ApiResponse<SavingsGoalTransferResponse>> {
-  const transferUid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-    const r = Math.random() * 16 | 0;
-    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
-  });
   return makePutRequest<SavingsGoalTransferResponse>(
-    `/api/v2/account/${accountUid}/savings-goals/${savingsGoalUid}/withdraw-money/${transferUid}`,
+    `/api/v2/account/${accountUid}/savings-goals/${savingsGoalUid}/withdraw-money/${generateUuid()}`,
     accessToken,
     { amount: { currency, minorUnits }, ...(reference ? { reference } : {}) }
   );

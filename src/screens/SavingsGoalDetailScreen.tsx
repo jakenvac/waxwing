@@ -15,6 +15,7 @@ import type { SavingsGoal, FeedItem, Balance } from '../types';
 import { colors, typography, spacing, borderRadius, touchTarget } from '../theme';
 import { getSavingsGoals, getTransactionFeed, getAccountBalance, addMoneyToSavingsGoal, withdrawMoneyFromSavingsGoal, formatCurrency } from '../services/starlingApi';
 import { useFocusEffect } from '@react-navigation/native';
+import { formatTime } from '../utils/formatTime';
 import { useScrollbar } from '../hooks/useScrollbar';
 import ScrollbarIndicator from '../components/ScrollbarIndicator';
 import ScreenHeader from '../components/ScreenHeader';
@@ -114,25 +115,6 @@ export default function SavingsGoalDetailScreen({ navigation, route }: SavingsGo
       fetchData();
     }, [])
   );
-
-  const formatTime = (timestamp: string): string => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const isToday = date.toDateString() === now.toDateString();
-    const yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const isYesterday = date.toDateString() === yesterday.toDateString();
-    const hours = date.getHours();
-    const mins = date.getMinutes().toString().padStart(2, '0');
-    const ampm = hours >= 12 ? 'pm' : 'am';
-    const displayHours = hours % 12 || 12;
-    const timeStr = `${displayHours}:${mins}${ampm}`;
-    if (isToday) return `Today ${timeStr}`;
-    if (isYesterday) return `Yesterday ${timeStr}`;
-    const day = date.getDate();
-    const month = date.toLocaleDateString('en-GB', { month: 'short' });
-    return `${day} ${month} ${timeStr}`;
-  };
 
   const handleModalSubmit = async (minorUnits: number, reference?: string) => {
     setModalSubmitting(true);
