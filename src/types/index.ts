@@ -12,6 +12,7 @@ export type {
   FeedResponse,
   SavingsGoal,
   SavingsGoalsResponse,
+  SavingsGoalTransferResponse,
 } from './api';
 
 export type {

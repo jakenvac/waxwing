@@ -100,3 +100,11 @@ export interface SavingsGoal {
 export interface SavingsGoalsResponse {
   savingsGoalList: SavingsGoal[];
 }
+
+/**
+ * Response from PUT /api/v2/account/{accountUid}/savings-goals/{savingsGoalUid}/add-money/{transferUid}
+ */
+export interface SavingsGoalTransferResponse {
+  transferUid: string;
+  success: boolean;
+}

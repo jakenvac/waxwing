@@ -2,7 +2,7 @@
  * Starling Bank API service
  * Handles authentication and API requests
  */
-import type { AccountsResponse, Balance, ApiResponse, FeedResponse, SavingsGoalsResponse } from '../types';
+import type { AccountsResponse, Balance, ApiResponse, FeedResponse, SavingsGoalsResponse, SavingsGoalTransferResponse } from '../types';
 
 // Use production API for live tokens
 const API_BASE_URL = 'https://api.starlingbank.com';
@@ -128,6 +128,72 @@ export async function getTransactionFeed(
   return makeRequest<FeedResponse>(
     `/api/v2/feed/account/${accountUid}/category/${categoryUid}?changesSince=${encodeURIComponent(since)}`,
     accessToken
+  );
+}
+
+/**
+ * Make an authenticated PUT request to Starling Bank
+ */
+async function makePutRequest<T>(
+  endpoint: string,
+  accessToken: string,
+  body: object
+): Promise<ApiResponse<T>> {
+  try {
+    const fullUrl = `${API_BASE_URL}${endpoint}`;
+    console.log(`[API] PUT ${fullUrl}`);
+
+    const response = await fetch(fullUrl, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+
+    console.log(`[API] Response status: ${response.status} ${response.statusText}`);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log('[API] Error response body:', errorText);
+      let errorData: any = {};
+      try { errorData = JSON.parse(errorText); } catch {}
+      return {
+        success: false,
+        error: errorData.error_description || errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`,
+      };
+    }
+
+    const responseText = await response.text();
+    const data = JSON.parse(responseText);
+    return { success: true, data };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Network request failed',
+    };
+  }
+}
+
+/**
+ * Add money to a savings goal.
+ * Requires: token
+ * PUT /api/v2/account/{accountUid}/savings-goals/{savingsGoalUid}/add-money/{transferUid}
+ */
+export async function addMoneyToSavingsGoal(
+  accessToken: string,
+  accountUid: string,
+  savingsGoalUid: string,
+  minorUnits: number,
+  currency: string
+): Promise<ApiResponse<SavingsGoalTransferResponse>> {
+  const transferUid = crypto.randomUUID();
+  return makePutRequest<SavingsGoalTransferResponse>(
+    `/api/v2/account/${accountUid}/savings-goals/${savingsGoalUid}/add-money/${transferUid}`,
+    accessToken,
+    { amount: { currency, minorUnits } }
   );
 }
 
